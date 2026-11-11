@@ -109,3 +109,27 @@ results and local artifact paths, including the 19-slide technical PowerPoint.
 
 No raw audio is stored. Dataset and derived artifact rights are separate from
 the MIT-licensed code; see [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md).
+
+## FMAKv2 expansion pilot
+
+The optional pilot adds artist-separated FMAK recordings to the existing
+histogram random forest. It requires the original GiantSteps feature cache,
+annotations and frozen `models/research_model.joblib`.
+
+```bash
+python -m keyclf.fmak plan
+python -m keyclf.fmak extract
+python -m keyclf.fmak_experiment
+```
+
+The plan fixes 500 recording IDs and splits before extraction. The downloader
+uses HTTP byte ranges to read selected ZIP members, checks each member's CRC,
+and deletes temporary audio. Extraction can be resumed without fetching completed
+recordings again. A server that ignores ranges is rejected instead of downloading
+the full archive.
+
+The experiment selects the new data weight on validation only, then compares
+the existing and expanded models on the original GiantSteps test and a new
+artist-separated FMAK test. The upload app offers the expanded model as
+`FMAK pilot (experimental)` while retaining the previous default. Local evidence
+is in `reports/fmak-pilot/test_results.json`; caches and models stay out of Git.

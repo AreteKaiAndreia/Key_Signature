@@ -43,3 +43,26 @@ annotations or any corresponding audio. Acquisition manifests, derived
 features, point coordinates, trained artifacts, and the technical presentation
 remain local under ignored data/report directories until their publication
 basis is documented.
+
+## FMAKv2 pilot (2026-11-10)
+
+- [FMAKv2 labels](https://zenodo.org/records/12759100) (CC BY 4.0; Kong, 2024)
+  are matched against [original FMAK labels and audio](https://zenodo.org/records/10719860)
+  (Wong and Hernandez). Tracks whose labels disagree are excluded before
+  sampling. These are two annotation versions of the same audio, not two corpora.
+- [Free Music Archive metadata](https://github.com/mdeff/fma) supplies the
+  artist ID, duration, and recording license. The pilot accepts explicitly
+  recognized Creative Commons attribution terms without NoDerivatives, or
+  public-domain entries, for local noncommercial research. Audio terms vary by
+  track and are distinct from the labels' license.
+- Partial archive reads validate byte range boundaries and member CRCs. The
+  archive-level published MD5 values are recorded for provenance, not claimed
+  as verified without downloading the full archives. Pilot audio MD5 values
+  are compared against all 604 original preview checksums and against each
+  other. Exact checksum checks cannot rule out different encodes, remixes,
+  excerpt overlap, or cross-dataset artist overlap.
+- The original GiantSteps split stays unchanged. FMA artists do not cross
+  FMA splits. Sampling prioritizes major keys and balances available tonics;
+  the resulting test is a pilot sample, not representative of all FMAK songs.
+- No audio, features, label manifests, or weights are released by this pilot.
+  The original publication gate remains unchanged.

@@ -33,6 +33,18 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### FMAKv2 expansion pilot 2026-11-10
+
+- Active: integrate up to 500 artist-separated, quality-screened FMAKv2 recordings with the existing histogram classifier.
+- Official Zenodo FMAK archive returned HTTP 206 for a 32-byte range probe. Use bounded range reads and discard temporary audio; do not download the 39.3 GB release to the laptop.
+- Preserve the original 604 rows, labels, and split. Freeze FMA artist groups and pilot IDs before audio extraction. Reserve a fresh FMA test split. Fit only on training data during selection, then refit on development data. Compare the frozen research model and the expanded candidate on identical test rows. No FMA features or models are published.
+- Manifest frozen: 5,489 label rows, 5,271 v1/v2 agreements, 1,619 eligible after archive, duration, license, and checksum-index checks. The pilot is 350/75/75 with FMA artist groups disjoint. Manifest `4d0273311ec9fef498c674719055c5f9ad6748fa41f2a262c201d31bf3bf4ef4`.
+- Selection plan: hold the 500-tree histogram forest and augmentation fixed. Compare added-recording weights 0.25, 0.5, and 1.0 on the mean of exact accuracy on the two validation sets; use mean top-three accuracy and lower mean log loss as tie-breaks. Fit the winner on both development sets. Score the frozen reference and winner on the unchanged GiantSteps test and new FMA test, and keep the added model opt-in.
+- Next action: `.venv/bin/python -m keyclf.fmak extract`; initial six-recording smoke checkpoints will be reused.
+- Smoke extraction passed and full extraction reached 70+ compatible checkpoints before a deliberate clean interruption (exit 130). Resume with bounded parallel range reads and two decode slots; no audio archive is staged. Full strict pytest before the scheduling change: 142 passed, one optional skip.
+
+### Previous benchmark checkpoint
+
 - Date: 2026-10-30 America/Los_Angeles
 - Active operation: none; requested research batch, PowerPoint and source handoff complete
 - Last successful action: exported and validated `reports/research-v2/presentation/Key_Signature_Technical_Review.pptx` (19 slides, 8 native charts, 8 native tables); visually inspected all slides, including final revised previews
@@ -107,13 +119,10 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Resume invariant
 
-The requested research batch is complete. The next command opens a local demo,
-not another test-driven tuning cycle. Further accuracy work should first verify
-independent major-key examples and define a new blind benchmark; this batch did
-not train on the additional metadata candidates. The feature extractor reuses
-compatible checkpoints and never needs raw audio to remain on disk. The working
-temporary Python runtime avoids Desktop cloud placeholders and may need to be
-recreated after operating-system temporary-directory cleanup. Do not publish
+The FMA pilot uses a frozen manifest and reuses compatible per-track checkpoints.
+It keeps the original benchmark intact and saves a separate model. The prior
+temporary runtime was cleaned up; the repository's Python 3.11 `.venv` was
+verified working on November 10. Do not publish
 `data/`, `models/`, or `reports/` unless `DATA_PROVENANCE.md` first records a
 valid redistribution basis. The commit containing this ledger is the current
 handoff commit (`git rev-parse HEAD`).
@@ -121,5 +130,5 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && /private/tmp/keyclf-research.1I9aUa/.venv/bin/streamlit run keyclf/app.py
+cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/python -m keyclf.fmak extract && .venv/bin/python -m keyclf.fmak_experiment
 ```

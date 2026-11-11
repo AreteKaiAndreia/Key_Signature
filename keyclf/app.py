@@ -85,12 +85,15 @@ def main() -> None:
     st.title("Key Signature Classifier")
     st.caption("Audio key prediction from pitch-class features")
     available = {label: Path(filename) for label, filename in (
-        ("Original", "models/model.joblib"), ("Research", "models/research_model.joblib")
+        ("Original", "models/model.joblib"), ("Research", "models/research_model.joblib"),
+        ("FMAK pilot (experimental)", "models/fmak_model.joblib"),
     ) if Path(filename).exists()}
     if not available:
         st.error("Train the model first with `python -m keyclf.train`.")
         return
-    choice = st.selectbox("Classifier", list(available), index=len(available) - 1) if len(available) > 1 else next(iter(available))
+    options = list(available)
+    default = options.index("Research") if "Research" in available else 0
+    choice = st.selectbox("Classifier", options, index=default) if len(options) > 1 else options[0]
     model_path = available[choice]
     upload = st.file_uploader("Upload a song", type=["mp3", "mp4", "wav"])
     if upload is None:

@@ -48,7 +48,7 @@ This is the durable resume ledger for the key-signature classifier.
 - Pooled pilot exact: 76/166 → 83/166 (45.78% → 50.00%). This particular mixture improved, but the expansion did not improve the original benchmark. Cross-source remixes and artist overlap remain unverified. Keep Research as the app default, with the expansion opt-in.
 - Last successful checks: 142 passed, one optional skip (strict pytest, `reports/fmak-pilot/pytest.xml`); selection and test receipt replayed without fitting or evaluating again; actual Streamlit option verified. Expanded-path cold maximum 1.269 s on three synthetic 120-second MP3 calls, excluding model loading (`reports/fmak-pilot/latency.json`).
 - Local artifacts: `data/work/fmak-pilot/{manifest.json,features.parquet,checkpoints/}`, `reports/fmak-pilot/{selection.json,test_results.json}`, and `models/fmak_model.joblib`. The latter is available as **FMAK pilot (experimental)**. The original cache and models were not replaced.
-- Source integration commit: `e34e12f`. An initial HTTPS push timed out during extraction; publish only source and this aggregate handoff.
+- Source and aggregate results published at `652074e` (integration `e34e12f`). [GitHub harness self-tests passed](https://github.com/benschwierking/Key_Signature/actions/runs/42972205742). Full hosted data acceptance was skipped under the existing redistribution gate.
 
 ### Previous benchmark checkpoint
 

@@ -107,7 +107,7 @@ results and local artifact paths, including the 19-slide technical PowerPoint.
 
 ## Data policy
 
-No raw audio is stored. Dataset and derived artifact rights are separate from
+No raw audio is retained. Dataset and derived artifact rights are separate from
 the MIT-licensed code; see [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md).
 
 ## FMAKv2 expansion pilot
@@ -133,3 +133,8 @@ the existing and expanded models on the original GiantSteps test and a new
 artist-separated FMAK test. The upload app offers the expanded model as
 `FMAK pilot (experimental)` while retaining the previous default. Local evidence
 is in `reports/fmak-pilot/test_results.json`; caches and models stay out of Git.
+
+The completed 500-track pilot improved exact accuracy on the fresh FMAK test
+from 29/75 to 39/75 (38.7% to 52.0%), but reduced exact accuracy on the unchanged
+GiantSteps test from 47/91 to 44/91 (51.6% to 48.4%). It is an optional model for
+experimentation, not a replacement for the previous default.

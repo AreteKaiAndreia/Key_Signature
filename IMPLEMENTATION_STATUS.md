@@ -30,18 +30,25 @@ This is the durable resume ledger for the key-signature classifier.
 | Public GitHub source release | complete | Public `main` pushed to `benschwierking/Key_Signature`; source-only boundary verified |
 | Accuracy research requested 2026-10-30 | complete, targets not met | 30 configurations, three development folds, one selected-model fixed-test evaluation; exact accuracy improved to 51.65% |
 | Technical PowerPoint requested 2026-10-30 | complete | 19 slides; editable charts/tables; all previews inspected and package/import/layout validation passed |
+| FMAKv2 expansion pilot | complete, mixed accuracy effect | 500/500 extracted; fresh FMAK accuracy 38.67% → 52.00%; unchanged GiantSteps benchmark 51.65% → 48.35%; default unchanged |
 
 ## Current checkpoint
 
 ### FMAKv2 expansion pilot 2026-11-10
 
-- Active: integrate up to 500 artist-separated, quality-screened FMAKv2 recordings with the existing histogram classifier.
+- Complete: integrated 500 artist-separated, quality-screened FMAKv2 recordings with the existing histogram classifier.
 - Official Zenodo FMAK archive returned HTTP 206 for a 32-byte range probe. Use bounded range reads and discard temporary audio; do not download the 39.3 GB release to the laptop.
 - Preserve the original 604 rows, labels, and split. Freeze FMA artist groups and pilot IDs before audio extraction. Reserve a fresh FMA test split. Fit only on training data during selection, then refit on development data. Compare the frozen research model and the expanded candidate on identical test rows. No FMA features or models are published.
 - Manifest frozen: 5,489 label rows, 5,271 v1/v2 agreements, 1,619 eligible after archive, duration, license, and checksum-index checks. The pilot is 350/75/75 with FMA artist groups disjoint. Manifest `4d0273311ec9fef498c674719055c5f9ad6748fa41f2a262c201d31bf3bf4ef4`.
 - Selection plan: hold the 500-tree histogram forest and augmentation fixed. Compare added-recording weights 0.25, 0.5, and 1.0 on the mean of exact accuracy on the two validation sets; use mean top-three accuracy and lower mean log loss as tie-breaks. Fit the winner on both development sets. Score the frozen reference and winner on the unchanged GiantSteps test and new FMA test, and keep the added model opt-in.
-- Next action: `.venv/bin/python -m keyclf.fmak extract`; initial six-recording smoke checkpoints will be reused.
-- Smoke extraction passed and full extraction reached 70+ compatible checkpoints before a deliberate clean interruption (exit 130). Resume with bounded parallel range reads and two decode slots; no audio archive is staged. Full strict pytest before the scheduling change: 142 passed, one optional skip.
+- Extraction: 500/500, zero failures; 80 resumed after a deliberate SIGINT, 420 newly extracted with parallel range reads and two decode slots. Repeat run reused all 500 without a download. No audio or ZIP archives retained. Feature cache is 112 KiB; persistent pilot working directory is 4.4 MiB including metadata and checkpoints.
+- Selection: validation chose FMAK weight 1.0 (GiantSteps 59.34%, FMAK 57.33%). Final fit used 513 original plus 425 FMAK development recordings, 938 total before rotations. Neither test set was scored until the selection was frozen.
+- Held-out GiantSteps (91): exact 47/91 → 44/91 (51.65% → 48.35%); top-three 71.43% → 69.23%; macro recall 41.46% → 35.94%.
+- Fresh held-out FMAK (75, 39 artists): exact 29/75 → 39/75 (38.67% → 52.00%); top-three 72.00% → 73.33%; macro recall 41.32% → 53.13%.
+- Pooled pilot exact: 76/166 → 83/166 (45.78% → 50.00%). This particular mixture improved, but the expansion did not improve the original benchmark. Cross-source remixes and artist overlap remain unverified. Keep Research as the app default, with the expansion opt-in.
+- Last successful checks: 142 passed, one optional skip (strict pytest, `reports/fmak-pilot/pytest.xml`); selection and test receipt replayed without fitting or evaluating again; actual Streamlit option verified. Expanded-path cold maximum 1.269 s on three synthetic 120-second MP3 calls, excluding model loading (`reports/fmak-pilot/latency.json`).
+- Local artifacts: `data/work/fmak-pilot/{manifest.json,features.parquet,checkpoints/}`, `reports/fmak-pilot/{selection.json,test_results.json}`, and `models/fmak_model.joblib`. The latter is available as **FMAK pilot (experimental)**. The original cache and models were not replaced.
+- Source integration commit: `e34e12f`. An initial HTTPS push timed out during extraction; publish only source and this aggregate handoff.
 
 ### Previous benchmark checkpoint
 
@@ -119,8 +126,8 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Resume invariant
 
-The FMA pilot uses a frozen manifest and reuses compatible per-track checkpoints.
-It keeps the original benchmark intact and saves a separate model. The prior
+The FMA pilot is complete. It uses a frozen manifest and reuses compatible
+per-track checkpoints. It keeps the original benchmark intact and saves a separate model. The prior
 temporary runtime was cleaned up; the repository's Python 3.11 `.venv` was
 verified working on November 10. Do not publish
 `data/`, `models/`, or `reports/` unless `DATA_PROVENANCE.md` first records a
@@ -130,5 +137,5 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/python -m keyclf.fmak extract && .venv/bin/python -m keyclf.fmak_experiment
+cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/streamlit run keyclf/app.py
 ```

@@ -89,6 +89,9 @@ This is the durable resume ledger for the key-signature classifier.
   and strength matched the native API. The initial forest deserialization
   took 12 seconds in the emulated container; actual Community Cloud cold
   start and memory limits still need verification after clearance.
+- Source-only implementation pushed at `115f987`.
+  [GitHub harness self-tests passed](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43558275504);
+  full real-data acceptance was skipped because no cleared cache URL is set.
 
 ### FMAKv2 expansion pilot 2026-11-10
 

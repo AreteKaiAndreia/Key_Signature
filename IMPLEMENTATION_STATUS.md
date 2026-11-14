@@ -67,8 +67,16 @@ This is the durable resume ledger for the key-signature classifier.
   on the same benchmarks. Use a fresh holdout for future claims of
   performance on completely unseen recordings.
 - Artifacts and receipts are under `reports/open-key-candidate/`. The
-  published model is `keyclf/open_key_model.json`. Public app verification
-  is the remaining step. For a local rerun of the frozen gate, run
+  published model is `keyclf/open_key_model.json`, pushed at `cd1a63f`.
+  The [public Streamlit app](https://aretekaiandreia-key-signature.streamlit.app/)
+  defaults to the custom model. In a signed-out browser it ranked C major,
+  C minor, and E minor for a synthetic C-major MP3. Switching to Essentia
+  reused the same upload and returned three results.
+  Screenshot: `reports/ui-checks/streamlit-open-model-result.jpg`.
+  Linux smoke checks covered MP3, MP4, and WAV and a nearly 120-second clip.
+  Full pytest: 150 passed, one optional skip.
+  [GitHub harness self-tests passed](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43640887561).
+  For a local rerun of the frozen gate, run
   `.venv/bin/python -m keyclf.train_open_candidate --final`.
 
 ### Essentia-only public app

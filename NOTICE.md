@@ -1,7 +1,7 @@
 # Code licenses and corresponding source
 
 The original project components remain available under the [MIT license](LICENSE).
-The combined two-engine Streamlit application, including `streamlit_app.py`,
+The combined Essentia Streamlit application, including `streamlit_app.py`,
 `keyclf/cloud_audio.py`, and `keyclf/cloud_engines.py`, is offered under the
 [GNU Affero General Public License, version 3](LICENSE-AGPL). When these
 components run together, the corresponding build and application source is

@@ -93,7 +93,9 @@ IDs were unchanged, and no synthesized clips entered either test set.
 selected `hook-0.25` weights. The licensing evidence above does not clear that
 specific combined artifact: it was fitted using GiantSteps, a mix of track
 terms from FMA, and the Sheet Sage research annotations. Do not upload the
-weights to GitHub Releases or launch the public app until permission or a
+weights to GitHub Releases or enable the public custom engine until permission or a
 license basis for hosting and distribution of the exact artifact is recorded
 here. Source code and aggregate results can be published separately. The
 license for the hosted software is documented in [NOTICE.md](NOTICE.md).
+The Essentia app uses fixed key profiles and needs no trained weights or
+project datasets.

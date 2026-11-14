@@ -34,11 +34,23 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Essentia-only public app
+
+- The Community Cloud entry point uses Essentia when no forest is configured.
+  The public app needs no project dataset or trained weights.
+- The Essentia-only configuration passed app checks in Linux with synthetic
+  MP3, MP4, and recorded-format WAV inputs. All three ranked C major first
+  for the C-major chord. The eight existing audio and research tests passed.
+- Streamlit Community Cloud is awaiting the owner's sign-in and any GitHub
+  authorization prompt. Then deploy `AreteKaiAndreia/Key_Signature` from
+  `main`, entry point `streamlit_app.py`, Python 3.11, with empty secrets.
+  Verify the public URL with a synthetic upload.
+
 ### Chroma-only, Hooktheory, and Community Cloud
 
 - Date: 2026-11-13 America/Los_Angeles. The matched ablation, annotation pilot,
-  held-out comparison, and local upload redesign are complete. The public app
-  and weights are held pending the decision in [DATA_PROVENANCE.md](DATA_PROVENANCE.md).
+  held-out comparison, and local upload redesign are complete. Public use of
+  the custom weights is held pending the decision in [DATA_PROVENANCE.md](DATA_PROVENANCE.md).
 - Frozen pilot: 500 of 9,699 eligible training excerpts, 300 major and 200 minor.
   Manifest `66e9ae6d30a325829677ec59bcd61562553cf1e646d6b4501fbd4d1082b7ab09`.
   Replaying `python -m keyclf.hooktheory && python -m keyclf.hook_experiment`
@@ -195,5 +207,5 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && KEYCLF_LOCAL_MODEL=1 .venv/bin/python -m streamlit run streamlit_app.py
+cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/python -m streamlit run streamlit_app.py
 ```

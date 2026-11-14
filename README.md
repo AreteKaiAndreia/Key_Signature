@@ -59,10 +59,10 @@ Upload an MP3, MP4, or WAV to see the detected key, model confidence, the top
 three guesses, and the track's chroma distribution. The classifier selector
 offers the locally trained models.
 
-The separate Community Cloud entry point, `streamlit_app.py`, also accepts a
-microphone recording and lets you choose between the chroma-only forest and
-Essentia's Krumhansl–Schmuckler scores. See [deployment and local run instructions](DEPLOYMENT.md).
-Public hosting awaits documented permission to distribute the trained weights.
+The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
+recording or MP3/MP4 and ranks three keys with Essentia's Krumhansl–Schmuckler
+scores. The custom forest is available as a local option. See
+[deployment and local run instructions](DEPLOYMENT.md).
 
 ## Held-out chroma and Hooktheory comparison
 

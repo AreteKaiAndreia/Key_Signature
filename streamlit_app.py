@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Public-ready Streamlit entry point for recording or uploading a soundbite."""
+"""Streamlit key detection with Essentia and an optional custom forest."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def get_model(url: str, sha256: str, allow_local: bool, revision: int):
 
 
 def main() -> None:
-    """Display two inference modes and an explicit analysis action."""
+    """Offer Essentia by default and the forest when weights are configured."""
     st.set_page_config(page_title="Key Signature Classifier", layout="centered")
     st.html(STUDIO_CSS)
     st.html(STUDIO_HEADER)
@@ -52,7 +52,14 @@ def main() -> None:
         else:
             clip = st.file_uploader("Upload a track", type=["mp3", "mp4"])
         st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
-    engine = st.selectbox("Prediction engine", [ML, KS])
+    allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
+    model_url = os.environ.get("KEYCLF_MODEL_URL", "")
+    model_sha = os.environ.get("KEYCLF_MODEL_SHA256", "")
+    if (allow_local and LOCAL.is_file()) or (model_url and model_sha):
+        engine = st.selectbox("Prediction engine", [ML, KS])
+    else:
+        engine = KS
+        st.caption("Key detection by Essentia · Krumhansl–Schmuckler")
     content = clip.getvalue() if clip is not None else b""
     identity = hashlib.sha256(content).hexdigest() if content else None
     if st.session_state.get("clip_id") != identity:
@@ -69,11 +76,8 @@ def main() -> None:
                 model_label = None
                 with st.spinner("Analyzing your soundbite…"):
                     if engine == ML:
-                        allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
                         revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
-                        model, variant, model_version = get_model(
-                            os.environ.get("KEYCLF_MODEL_URL", ""), os.environ.get("KEYCLF_MODEL_SHA256", ""),
-                            allow_local, revision)
+                        model, variant, model_version = get_model(model_url, model_sha, allow_local, revision)
                         model_label = f"{variant} · {model_version}"
                     samples, clipped = decode_clip(content, "recording.wav" if source == "Record a soundbite" else clip.name)
                     profile, scores = custom_scores(model, samples) if engine == ML else essentia_scores(samples)

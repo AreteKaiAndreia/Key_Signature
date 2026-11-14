@@ -34,6 +34,23 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Hallmark redesign and public app verification
+
+- The Console layout puts upload first and the detected key above two alternate
+  keys and the chroma distribution. The input and result columns stack on
+  phones. Streamlit still provides both upload and microphone recording.
+- Hallmark's static and browser audits reported zero failures, reflexes or
+  warnings. The before audit found 12 failures, one reflex and one warning.
+  Desktop and phone captures and the before/after comparison are in
+  `.hallmark/` locally. The source keeps the original links and input modes.
+- The frozen custom model was verified again against the existing receipts.
+  GiantSteps was **47/91 (51.6%) first** and **67/91 (73.6%) top three**.
+  FMAK was **40/75 (53.3%) first** and **56/75 (74.7%) top three**. The model
+  SHA-256 remains `0ca344dd5d21b0153df0a93e9010858f59a45a64ace963366a81f2fc7ff2a92a`.
+- Hosted verification pending. After this commit deploys, open the
+  [public app](https://aretekaiandreia-key-signature.streamlit.app/) signed out
+  and exercise MP3, MP4 and microphone recording through Analyze.
+
 ### Publishable custom model
 
 - Target: at least 50% first choice and 70% top three on each unchanged

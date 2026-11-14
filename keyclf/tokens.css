@@ -1,0 +1,35 @@
+:root {
+  color-scheme: dark;
+  --color-paper: #101417;
+  --color-paper-2: #1a2025;
+  --color-paper-3: #0c1013;
+  --color-ink: #eff2f4;
+  --color-ink-2: #d1d9df;
+  --color-muted: #a8b3bd;
+  --color-rule: #343e47;
+  --color-field: #687784;
+  --color-accent: #f6be60;
+  --color-accent-ink: #21160a;
+  --color-accent-soft: #373024;
+  --color-focus: var(--color-accent);
+  --color-cool: #8cbfe2;
+  --font-display: "Geist", system-ui, sans-serif;
+  --font-body: var(--font-display);
+  --font-outlier: "IBM Plex Mono", ui-monospace, monospace;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.2rem;
+  --text-title: 1.728rem;
+  --text-reading: 3.75rem;
+  --text-reading-mobile: 2.65rem;
+  --container: 67rem;
+  --radius-card: 10px;
+  --radius-control: 6px;
+  --control-size: 44px;
+}

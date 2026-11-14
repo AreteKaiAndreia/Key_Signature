@@ -65,8 +65,8 @@ def render_result(vector: np.ndarray, probability: np.ndarray) -> None:
     order = np.argsort(-probability, kind="stable")[:3]
     best = int(order[0])
     st.html(f"""<section class="studio-result" aria-label="Detected key">
-      <p class="studio-kicker">Detected key</p>
-      <h2>{KEY_NAMES[best]}</h2>
+      <h2 class="studio-panel-title">Detected key</h2>
+      <p class="studio-reading">{KEY_NAMES[best]}</p>
       <p class="studio-confidence"><strong>{probability[best]:.1%}</strong> model confidence</p>
     </section>""")
     with st.container(key="result_details"):
@@ -87,7 +87,7 @@ def render_result(vector: np.ndarray, probability: np.ndarray) -> None:
 
 def main() -> None:
     """Run the Streamlit application."""
-    st.set_page_config(page_title="Key Signature Classifier", page_icon="🎼", layout="centered")
+    st.set_page_config(page_title="Key Signature Classifier", layout="centered")
     st.html(STUDIO_CSS)
     st.html(STUDIO_HEADER)
     with st.container(key="track_input", border=True):

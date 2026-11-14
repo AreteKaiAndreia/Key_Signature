@@ -1,0 +1,22 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "Console",
+  "axes": "graphite / grotesk sans / chromatic amber",
+  "fingerprint": "Amber controls, cool-blue key readout, twelve pitch bars",
+  "hero": "Working upload and result",
+  "nav": "Native Streamlit",
+  "footer": "Source and Essentia license",
+  "imagery": "The real chroma plot",
+  "photos": [],
+  "entry": "Upload first, then recording",
+  "sections": "Audio controls and detected key",
+  "signature": "The musical key above its twelve pitch readings",
+  "waived": "None",
+  "prompt": "Compact musical key analysis with MP3, MP4, and microphone",
+  "date": "2026-11-14"
+ }
+]

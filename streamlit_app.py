@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import hashlib
+from html import escape
 import os
 from pathlib import Path
 from threading import Lock
 
-import pandas as pd
 import requests
 import streamlit as st
 
@@ -19,9 +19,9 @@ from keyclf.open_candidate import CandidateKeyModel
 from keyclf.studio import STUDIO_CSS, STUDIO_HEADER
 from threadpoolctl import threadpool_limits
 
-ML = "Custom ML — chroma-only random forest"
-OPEN_ML = "Custom ML — chroma, harmony, and bass"
-KS = "Essentia — Krumhansl–Schmuckler"
+ML = "Research ML (random forest)"
+OPEN_ML = "Custom ML (open-trained)"
+KS = "Essentia (Krumhansl–Schmuckler)"
 LOCAL = Path(__file__).resolve().parent / "models" / "cloud_model.joblib"
 OPEN_ARTIFACT = Path(__file__).resolve().parent / "keyclf" / "open_key_model.json"
 SOURCE = "https://github.com/AreteKaiAndreia/Key_Signature"
@@ -48,87 +48,119 @@ def get_open_model() -> CandidateKeyModel:
     return CandidateKeyModel.load(OPEN_ARTIFACT)
 
 
+def render_readout(stage: str, result=None, message: str = "", *, essentia: bool = False) -> str:
+    """Render the same readout through empty, loading, error, and full states."""
+    header = '<section class="studio-result" aria-labelledby="readout-title"><h2 class="studio-panel-title" id="readout-title">Detected key</h2>'
+    if stage == "loading":
+        return header + '<div class="studio-wait" aria-hidden="true"></div><p class="studio-empty" role="status">Analyzing audio…</p></section>'
+    if result is None:
+        role = ' role="alert"' if stage == "error" else ""
+        return f'{header}<p class="studio-empty"{role}>{escape(message)}</p></section>'
+
+    ranking, profile, clipped, model_label = result
+    key, score = ranking[0]
+    score_format = ".3f" if essentia else ".1%"
+    label = "match score" if essentia else "model score"
+    rows = "".join(f'<tr><th scope="row">{escape(name)}</th><td class="studio-measure">{value:{score_format}}</td></tr>'
+                   for name, value in ranking[1:])
+    # Use the full 0–100% scale for each pitch class and expose exact readings.
+    bars = "".join(
+        f'<div class="studio-pitch" aria-label="{pitch}: {value:.1%}" title="{pitch}: {value:.1%}">'
+        f'<div class="studio-track" aria-hidden="true"><div class="studio-bar" style="--pitch: {value:.2%}"></div></div>'
+        f'<span>{pitch}</span></div>'
+        for pitch, value in zip(PITCH_NAMES, profile, strict=True)
+    )
+    notices = ""
+    if essentia:
+        notices += '<p class="studio-confidence">Match scores measure correlation with each key profile.</p>'
+    if clipped:
+        notices += '<p class="studio-confidence">Only the first 120 seconds were analyzed.</p>'
+    if model_label:
+        notices += f'<p class="studio-confidence">{escape(model_label)}</p>'
+    return f"""{header}
+      <p class="studio-reading">{escape(key)}</p>
+      <p class="studio-confidence"><strong class="studio-measure">{score:{score_format}}</strong> {label}</p>
+      <table class="studio-alternates"><caption>Alternate keys</caption><tbody>{rows}</tbody></table>
+      <figure class="studio-chart" aria-label="Pitch-class distribution">
+        <figcaption>Chroma distribution</figcaption><div class="studio-pitches">{bars}</div>
+      </figure>
+      {notices}
+    </section>"""
+
+
 def main() -> None:
     """Offer both public engines and the research forest when configured."""
     st.set_page_config(page_title="Key Signature Classifier", layout="centered")
     st.html(STUDIO_CSS)
     st.html(STUDIO_HEADER)
-    with st.container(key="track_input", border=True):
-        source = st.radio("Audio source", ["Upload MP3/MP4", "Record a soundbite"], horizontal=True)
-        if source == "Record a soundbite":
-            st.caption("Allow microphone access when prompted. If it’s blocked, use the file upload option.")
-            clip = st.audio_input("Record a soundbite", sample_rate=44100)
-        else:
-            clip = st.file_uploader("Upload a track", type=["mp3", "mp4"])
-        st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
     allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
     model_url = os.environ.get("KEYCLF_MODEL_URL", "")
     model_sha = os.environ.get("KEYCLF_MODEL_SHA256", "")
     engines = [OPEN_ML, KS]
     if (allow_local and LOCAL.is_file()) or (model_url and model_sha):
         engines.append(ML)
-    engine = st.selectbox("Prediction engine", engines)
-    content = clip.getvalue() if clip is not None else b""
+    with st.container(key="console_workbench"):
+        controls, output = st.columns([.86, 1.14], gap="large")
+        with controls, st.container(key="console_input"):
+            st.html('<h2 class="studio-panel-title">Audio</h2>')
+            with st.container(key="track_input"):
+                source = st.radio("Audio source", ["Upload MP3/MP4", "Record a soundbite"],
+                                  horizontal=True, label_visibility="collapsed")
+                if source == "Record a soundbite":
+                    clip = st.audio_input("Record a soundbite", sample_rate=44100, label_visibility="collapsed")
+                    st.caption("Allow microphone access when prompted. If it’s blocked, use the file upload option.")
+                else:
+                    clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")
+                st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
+            engine = st.selectbox("Prediction engine", engines)
+            content = clip.getvalue() if clip is not None else b""
+            analyze = st.button("Analyze", type="primary", disabled=not content)
+        readout = output.empty()
     identity = hashlib.sha256(content).hexdigest() if content else None
     if st.session_state.get("clip_id") != identity:
         st.session_state["clip_id"] = identity
         st.session_state["predictions"] = {}
     predictions = st.session_state.setdefault("predictions", {})
-    if st.button("Analyze", type="primary", disabled=not content):
+    error = ""
+    if analyze:
         predictions.pop(engine, None)
         slot = inference_slot()
         if not slot.acquire(blocking=False):
-            st.warning("The server is analyzing another clip. Try again in a moment.")
+            error = "The server is analyzing another clip. Try again in a moment."
         else:
             try:
+                readout.html(render_readout("loading"))
                 model_label = None
-                with st.spinner("Analyzing your soundbite…"):
-                    if engine == ML:
-                        revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
-                        model, variant, model_version = get_model(model_url, model_sha, allow_local, revision)
-                        model_label = f"{variant} · {model_version}"
-                    samples, clipped = decode_clip(content, "recording.wav" if source == "Record a soundbite" else clip.name)
-                    if engine == OPEN_ML:
-                        with threadpool_limits(limits=1):
-                            profile, scores = get_open_model().score_audio(samples)
-                    elif engine == KS:
-                        profile, scores = essentia_scores(samples)
-                    else:
-                        profile, scores = custom_scores(model, samples)
-                    predictions[engine] = (rank_three(scores), profile.tolist(), clipped, model_label)
+                if engine == ML:
+                    revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
+                    model, variant, version = get_model(model_url, model_sha, allow_local, revision)
+                    model_label = f"{variant} ({version})"
+                samples, clipped = decode_clip(content, "recording.wav" if source == "Record a soundbite" else clip.name)
+                if engine == OPEN_ML:
+                    with threadpool_limits(limits=1):
+                        profile, scores = get_open_model().score_audio(samples)
+                elif engine == KS:
+                    profile, scores = essentia_scores(samples)
+                else:
+                    profile, scores = custom_scores(model, samples)
+                predictions[engine] = (rank_three(scores), profile.tolist(), clipped, model_label)
             except (ValueError, RuntimeError, FileNotFoundError) as exc:
-                st.error(str(exc))
+                error = str(exc)
             except (OSError, ImportError, requests.RequestException):
-                st.error("This engine could not complete analysis. Check the app configuration and try again.")
+                error = "Analysis failed. Try another clip or switch engines."
             finally:
                 slot.release()
-    if engine in predictions:
-        ranking, profile, clipped, model_label = predictions[engine]
-        if clipped:
-            st.info("Only the first 120 seconds were analyzed.")
-        if model_label:
-            st.caption(f"Model: {model_label}")
-        key, score = ranking[0]
-        number = f"{score:.3f}" if engine == KS else f"{score:.1%}"
-        label = "match score" if engine == KS else "model score"
-        st.html(f"""<section class="studio-result" aria-label="Detected key">
-          <p class="studio-kicker">Detected key</p><h2>{key}</h2>
-          <p class="studio-confidence"><strong>{number}</strong> {label}</p>
-        </section>""")
-        st.html('<h3 class="studio-section">Top three keys</h3>')
-        st.table(pd.DataFrame([
-            {"Rank": i, "Key": key, "Match score" if engine == KS else "Model score":
-             f"{score:.3f}" if engine == KS else f"{score:.1%}"}
-            for i, (key, score) in enumerate(ranking, 1)
-        ]).set_index("Rank"))
-        st.caption("Match scores are correlations, not probabilities." if engine == KS
-                   else "Model scores indicate how the classifier ranks the candidates.")
-        st.html('<h3 class="studio-section">Pitch-class distribution</h3>')
-        st.bar_chart(pd.DataFrame({"Pitch class": PITCH_NAMES, "Strength": profile}),
-                     x="Pitch class", y="Strength", sort=False, x_label="Pitch class", height=145,
-                     color="#b8db84")
-    st.caption(f"[Corresponding source and build instructions]({SOURCE}/blob/main/DEPLOYMENT.md) · "
-               "[Essentia license](https://essentia.upf.edu/licensing_information.html)")
+    if error:
+        readout.html(render_readout("error", message=error))
+    elif engine in predictions:
+        readout.html(render_readout("result", predictions[engine], essentia=engine == KS))
+    else:
+        message = "Select Analyze to find its key." if content else "Upload a track or record a soundbite to find its key."
+        readout.html(render_readout("empty", message=message))
+    st.html(f"""<footer class="studio-footer">
+      <a href="{SOURCE}/blob/main/DEPLOYMENT.md">Corresponding source and build instructions</a>
+      <a href="https://essentia.upf.edu/licensing_information.html">Essentia license</a>
+    </footer>""")
 
 
 if __name__ == "__main__":

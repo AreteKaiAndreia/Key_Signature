@@ -18,20 +18,39 @@ from threadpoolctl import threadpool_limits
 from .baseline import ks_scores
 from .cloud_audio import SAMPLE_RATE
 from .features import feature_names, histogram_from_audio
-from .keys import KEY_NAMES, parse_key
+from .keys import KEY_NAMES, parse_key, relative_key
 
 HISTOGRAM = feature_names()[24:]
 REPO = "https://github.com/AreteKaiAndreia/Key_Signature"
 MAX_MODEL_BYTES = 256 * 1024**2
 
 
-def rank_three(scores: np.ndarray) -> list[tuple[str, float]]:
-    """Return three distinct major/minor labels in deterministic score order."""
+def _score_order(scores: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     scores = np.asarray(scores, dtype=float)
     if scores.shape != (24,) or not np.isfinite(scores).all():
         raise ValueError("invalid score vector")
-    order = np.argsort(-scores, kind="stable")[:3]
-    return [(KEY_NAMES[k], float(scores[k])) for k in order]
+    return scores, np.argsort(-scores, kind="stable")
+
+
+def rank_three(scores: np.ndarray) -> list[tuple[str, float]]:
+    """Return three distinct major/minor labels in deterministic score order."""
+    scores, order = _score_order(scores)
+    return [(KEY_NAMES[k], float(scores[k])) for k in order[:3]]
+
+
+def rank_relative_pairs(scores: np.ndarray) -> list[tuple[int, int, float]]:
+    """Rank the 12 relative-key pairs by each pair's highest member score."""
+    scores, order = _score_order(scores)
+    pairs = []
+    seen = set()
+    for index in order:
+        key = int(index)
+        if key in seen:
+            continue
+        relative = relative_key(key)
+        pairs.append((key, relative, float(scores[key])))
+        seen.update((key, relative))
+    return pairs
 
 
 def essentia_profile(samples: np.ndarray) -> np.ndarray:

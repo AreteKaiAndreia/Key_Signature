@@ -13,8 +13,8 @@ import requests
 import streamlit as st
 
 from keyclf.cloud_audio import decode_clip
-from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, rank_three, released_model
-from keyclf.keys import PITCH_NAMES
+from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, rank_relative_pairs, released_model
+from keyclf.keys import PITCH_NAMES, key_name
 from keyclf.open_candidate import CandidateKeyModel
 from keyclf.studio import STUDIO_HEADER, studio_css
 from threadpoolctl import threadpool_limits
@@ -50,7 +50,7 @@ def get_open_model() -> CandidateKeyModel:
 
 def render_readout(stage: str, result=None, message: str = "", *, essentia: bool = False) -> str:
     """Render the same readout through empty, loading, error, and full states."""
-    header = '<section class="studio-result" aria-labelledby="readout-title"><h2 class="studio-panel-title" id="readout-title">Detected key</h2>'
+    header = '<section class="studio-result" aria-labelledby="readout-title"><h2 class="studio-panel-title" id="readout-title">Detected key pair</h2>'
     if stage == "loading":
         return header + '<div class="studio-wait" aria-hidden="true"></div><p class="studio-empty" role="status">Analyzing audio…</p></section>'
     if result is None:
@@ -58,11 +58,14 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
         return f'{header}<p class="studio-empty"{role}>{escape(message)}</p></section>'
 
     ranking, profile, clipped, model_label = result
-    key, score = ranking[0]
+    key, relative, score = ranking[0]
     score_format = ".3f" if essentia else ".1%"
-    label = "match score" if essentia else "model score"
-    rows = "".join(f'<tr><th scope="row">{escape(name)}</th><td class="studio-measure">{value:{score_format}}</td></tr>'
-                   for name, value in ranking[1:])
+    label = "higher match score in pair" if essentia else "higher model score in pair"
+    rows = "".join(
+        f'<tr><th scope="row">{key_name(first)} / {key_name(second)}</th>'
+        f'<td class="studio-measure">{value:{score_format}}</td></tr>'
+        for first, second, value in ranking[1:]
+    )
     # Use the full 0–100% scale for each pitch class and expose exact readings.
     bars = "".join(
         f'<div class="studio-pitch" aria-label="{pitch}: {value:.1%}" title="{pitch}: {value:.1%}">'
@@ -78,9 +81,9 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
     if model_label:
         notices += f'<p class="studio-confidence">{escape(model_label)}</p>'
     return f"""{header}
-      <p class="studio-reading">{escape(key)}</p>
+      <p class="studio-reading studio-pair"><span>{key_name(key)}</span> <span>{key_name(relative)}</span></p>
       <p class="studio-confidence"><strong class="studio-measure">{score:{score_format}}</strong> {label}</p>
-      <table class="studio-alternates"><caption>Alternate keys</caption><tbody>{rows}</tbody></table>
+      <table class="studio-alternates"><caption>Alternate key pairs</caption><tbody>{rows}</tbody></table>
       <figure class="studio-chart" aria-label="Pitch-class distribution">
         <figcaption>Chroma distribution</figcaption><div class="studio-pitches">{bars}</div>
       </figure>
@@ -116,11 +119,11 @@ def main() -> None:
             content = clip.getvalue() if clip is not None else b""
             analyze = st.button("Analyze", type="primary", disabled=not content)
         readout = output.empty()
+    predictions = st.session_state.setdefault("relative_pair_predictions", {})
     identity = hashlib.sha256(content).hexdigest() if content else None
     if st.session_state.get("clip_id") != identity:
         st.session_state["clip_id"] = identity
-        st.session_state["predictions"] = {}
-    predictions = st.session_state.setdefault("predictions", {})
+        predictions.clear()
     error = ""
     if analyze:
         predictions.pop(engine, None)
@@ -143,7 +146,7 @@ def main() -> None:
                     profile, scores = essentia_scores(samples)
                 else:
                     profile, scores = custom_scores(model, samples)
-                predictions[engine] = (rank_three(scores), profile.tolist(), clipped, model_label)
+                predictions[engine] = (rank_relative_pairs(scores)[:3], profile.tolist(), clipped, model_label)
             except (ValueError, RuntimeError, FileNotFoundError) as exc:
                 error = str(exc)
             except (OSError, ImportError, requests.RequestException):

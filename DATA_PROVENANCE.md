@@ -99,7 +99,7 @@ forest. Whether a dataset license applies to the exported model depends on
 the license and what the artifact contains. See
 [Creative Commons' analysis of licenses and trained models](https://creativecommons.org/using-cc-licensed-works-for-ai-training-2/).
 
-The [public Essentia app](https://music-key-analyzer.streamlit.app/)
+The Essentia engine in the [public app](https://musickeyanalyzer.streamlit.app/)
 uses fixed key profiles and needs no trained weights or project datasets.
 See [NOTICE.md](NOTICE.md) for the hosted software licenses.
 

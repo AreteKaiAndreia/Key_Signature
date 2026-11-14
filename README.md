@@ -60,15 +60,19 @@ three guesses, and the track's chroma distribution. The classifier selector
 offers the locally trained models.
 
 The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
-recording or MP3/MP4 and ranks three keys with the custom model or Essentia.
+recording or MP3/MP4 and ranks three relative-key pairs with the custom
+model or Essentia. C major and A minor, for example, share one result.
 The custom model learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
-original synthetic phrases. [Open the public app](https://music-key-analyzer.streamlit.app/).
+original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).
 
-| Held-out set | First choice | Top three |
-|---|---:|---:|
-| GiantSteps | 47/91 (51.6%) | 67/91 (73.6%) |
-| FMAK | 40/75 (53.3%) | 56/75 (74.7%) |
+| Held-out set | First exact key | Top three exact keys | First pair | Top three pairs |
+|---|---:|---:|---:|---:|
+| GiantSteps | 47/91 (51.6%) | 67/91 (73.6%) | 48/91 (52.7%) | 74/91 (81.3%) |
+| FMAK | 40/75 (53.3%) | 56/75 (74.7%) | 47/75 (62.7%) | 62/75 (82.7%) |
+
+The pair metric accepts either key in each pair, and three pairs cover six
+keys. Both measurements use the same frozen custom model and held-out clips.
 
 See [deployment and local run instructions](DEPLOYMENT.md) and
 [training data provenance](DATA_PROVENANCE.md#training-sources-for-the-open-key-model).

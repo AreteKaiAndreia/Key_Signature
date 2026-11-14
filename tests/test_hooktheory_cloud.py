@@ -11,8 +11,9 @@ import soundfile as sf
 from sklearn.ensemble import RandomForestClassifier
 
 from keyclf import cloud_audio, cloud_engines, features, hooktheory
-from keyclf.cloud_engines import custom_scores, essentia_scores, native_key, rank_three
-from keyclf.keys import KEY_NAMES
+from keyclf.cloud_engines import custom_scores, essentia_scores, native_key, rank_relative_pairs, rank_three
+from keyclf.evaluate_relative_pairs import measure
+from keyclf.keys import KEY_NAMES, parse_key, relative_key
 
 
 def chord(seconds=2):
@@ -137,6 +138,20 @@ def test_decode_rejects_bad_audio_and_limits_duration(monkeypatch):
     monkeypatch.setattr(cloud_audio, "MAX_BYTES", 12)
     with pytest.raises(ValueError, match="50 MB"):
         decode(b"x" * 13, "large.mp4")
+
+
+def test_relative_pair_ranking_and_accuracy():
+    scores = np.zeros(24)
+    a_minor, c_major, g_major = (parse_key(key) for key in ("A minor", "C major", "G major"))
+    scores[[a_minor, c_major, g_major]] = [.6, .3, .1]
+    ranked = rank_relative_pairs(scores)
+    assert ranked[:2] == [(a_minor, c_major, .6), (g_major, relative_key(g_major), .1)]
+    assert len(ranked) == 12
+    assert sorted(key for first, second, _ in ranked for key in (first, second)) == list(range(24))
+    assert all(relative_key(first) == second for first, second, _ in ranked)
+    assert measure(np.array([scores, scores]), np.array([c_major, relative_key(g_major)])) == {
+        "n": 2, "exact": {"first": 0, "top3": 1}, "relative_pairs": {"first": 1, "top3": 2},
+    }
 
 
 def test_release_checks_checksum_before_loading_and_rejects_missing_weights(tmp_path, monkeypatch):

@@ -2,14 +2,15 @@
 
 ## Public app on Community Cloud
 
-[Public key classifier](https://music-key-analyzer.streamlit.app/)
+[Public key classifier](https://musickeyanalyzer.streamlit.app/)
 
 Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced
 settings. Leave Secrets empty. The app defaults to the custom classifier
 bundled as `keyclf/open_key_model.json`. The engine selector also offers
-Essentia's Krumhansl–Schmuckler scores. Both rank three keys from a microphone
-recording or an MP3/MP4 upload, with a 120-second analysis limit.
+Essentia's Krumhansl–Schmuckler scores. Both rank three relative-key pairs
+by each pair's higher key score. They accept a microphone recording or an
+MP3/MP4 upload, with a 120-second analysis limit.
 
 The owner signs in at [Streamlit Community Cloud](https://share.streamlit.io/)
 and completes any GitHub connection prompt. See the
@@ -49,7 +50,7 @@ redistribution basis for the exact weights is recorded in
 2. In the app's secrets, set top-level `KEYCLF_MODEL_URL` to the GitHub Release
    asset URL and `KEYCLF_MODEL_SHA256` to the expected lower-case digest.
    No credentials, audio, labels, or feature caches belong in the repository or app.
-3. Verify the release loads and both engines rank three keys in the hosted
+3. Verify the release loads and both engines rank three key pairs in the hosted
    browser using a recording and synthetic MP3 and MP4 files, then share the URL.
    Supply the deployed build's corresponding source per [NOTICE.md](NOTICE.md).
 

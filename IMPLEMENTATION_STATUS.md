@@ -47,7 +47,7 @@ This is the durable resume ledger for the key-signature classifier.
   GiantSteps was **47/91 (51.6%) first** and **67/91 (73.6%) top three**.
   FMAK was **40/75 (53.3%) first** and **56/75 (74.7%) top three**. The model
   SHA-256 remains `0ca344dd5d21b0153df0a93e9010858f59a45a64ace963366a81f2fc7ff2a92a`.
-- The [public app](https://aretekaiandreia-key-signature.streamlit.app/) loaded
+- The [public app](https://music-key-analyzer.streamlit.app/) loaded
   signed out from `62b5bf4`. A synthetic C-major MP3 on desktop and MP4 at
   390 px both returned C major plus two alternate keys and 12 pitch bins.
   Switching to Essentia reused the MP3 and returned C major as well. Upload,
@@ -96,7 +96,7 @@ This is the durable resume ledger for the key-signature classifier.
   performance on completely unseen recordings.
 - Artifacts and receipts are under `reports/open-key-candidate/`. The
   published model is `keyclf/open_key_model.json`, pushed at `cd1a63f`.
-  The [public Streamlit app](https://aretekaiandreia-key-signature.streamlit.app/)
+  The [public Streamlit app](https://music-key-analyzer.streamlit.app/)
   defaults to the custom model. In a signed-out browser it ranked C major,
   C minor, and E minor for a synthetic C-major MP3. Switching to Essentia
   reused the same upload and returned three results.
@@ -115,7 +115,7 @@ This is the durable resume ledger for the key-signature classifier.
   MP3, MP4, and recorded-format WAV inputs. All three ranked C major first
   for the C-major chord. The eight existing audio and research tests passed.
 - The owner completed GitHub authorization. The
-  [public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
+  [public Essentia app](https://music-key-analyzer.streamlit.app/)
   is live on Streamlit Community Cloud from `main`, entry point
   `streamlit_app.py`, Python 3.11, with empty secrets.
 - Verified the public URL while signed out. A synthetic C-major MP3 ranked
@@ -284,7 +284,7 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-open 'https://aretekaiandreia-key-signature.streamlit.app/'
+open 'https://music-key-analyzer.streamlit.app/'
 ```
 
 Select **Record a soundbite**, grant microphone access for the test, record a

@@ -63,7 +63,7 @@ The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
 recording or MP3/MP4 and ranks three keys with the custom model or Essentia.
 The custom model learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
-original synthetic phrases. [Open the public app](https://aretekaiandreia-key-signature.streamlit.app/).
+original synthetic phrases. [Open the public app](https://music-key-analyzer.streamlit.app/).
 
 | Held-out set | First choice | Top three |
 |---|---:|---:|

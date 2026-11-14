@@ -2,7 +2,7 @@
 
 ## Public app on Community Cloud
 
-[Public key classifier](https://aretekaiandreia-key-signature.streamlit.app/)
+[Public key classifier](https://music-key-analyzer.streamlit.app/)
 
 Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced

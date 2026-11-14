@@ -11,9 +11,10 @@ import soundfile as sf
 from sklearn.ensemble import RandomForestClassifier
 
 from keyclf import cloud_audio, cloud_engines, features, hooktheory
-from keyclf.cloud_engines import custom_scores, essentia_scores, native_key, rank_relative_pairs, rank_three
+from keyclf.cloud_engines import custom_scores, essentia_scores, native_key, rank_three
 from keyclf.evaluate_relative_pairs import measure
 from keyclf.keys import KEY_NAMES, parse_key, relative_key
+from keyclf.relative_pairs import rank_relative_pairs
 
 
 def chord(seconds=2):

@@ -13,9 +13,10 @@ import requests
 import streamlit as st
 
 from keyclf.cloud_audio import decode_clip
-from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, rank_relative_pairs, released_model
+from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
 from keyclf.keys import PITCH_NAMES, key_name
 from keyclf.open_candidate import CandidateKeyModel
+from keyclf.relative_pairs import rank_relative_pairs
 from keyclf.studio import STUDIO_HEADER, studio_css
 from threadpoolctl import threadpool_limits
 

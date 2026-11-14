@@ -8,12 +8,12 @@ from pathlib import Path
 import numpy as np
 from threadpoolctl import threadpool_limits
 
-from .cloud_engines import rank_relative_pairs
 from .fmak import atomic_json
 from .fmak_experiment import file_hash
 from .open_candidate import CandidateKeyModel
 from .open_harmonic_model import benchmark, xy
 from .open_loops import ROOT
+from .relative_pairs import rank_relative_pairs
 from .train_open_candidate import OUT
 
 

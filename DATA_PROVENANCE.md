@@ -66,3 +66,34 @@ basis is documented.
   the resulting test is a pilot sample, not representative of all FMAK songs.
 - No audio, features, label manifests, or weights are released by this pilot.
   The original publication gate remains unchanged.
+
+## Hooktheory notation pilot (2026-11-13)
+
+The project used the [Sheet Sage research release of Hooktheory annotations](https://github.com/chrisdonahue/sheetsage#hooktheory-dataset),
+attributed to Hooktheory and to Chris Donahue, John Thickstun, and Percy Liang
+(*Melody transcription via generative pre-training*, ISMIR 2023). The authors
+list the annotation release under CC BY-NC-SA 3.0. The compressed archive
+`Hooktheory.json.gz` is pinned by SHA-256
+`917b7cd58f5f4e07d6c36acf7bfad958c99ee05472dab3555399141094698e0c`.
+The pilot uses annotations from the published training partition for local,
+noncommercial research. It does not scrape TheoryTab or download linked media.
+
+Five hundred excerpts were synthesized from annotated absolute melody and
+chord pitches, with a fixed sound and tempo. The annotated key is used only as
+a label. Audio exists only in memory. The pilot excludes duplicate titles and
+artist identities, duplicate media IDs, and known held-out matches, including
+screening against all 75 held-out FMAK track identities. The GiantSteps cache
+does not have matched artist/title identities for this check, so overlap with
+GiantSteps by composition or recording cannot be ruled out. The original test
+IDs were unchanged, and no synthesized clips entered either test set.
+
+### Hosted model decision
+
+**Blocked.** No hosting or redistribution basis is documented for the
+selected `hook-0.25` weights. The licensing evidence above does not clear that
+specific combined artifact: it was fitted using GiantSteps, a mix of track
+terms from FMA, and the Sheet Sage research annotations. Do not upload the
+weights to GitHub Releases or launch the public app until permission or a
+license basis for hosting and distribution of the exact artifact is recorded
+here. Source code and aggregate results can be published separately. The
+license for the hosted software is documented in [NOTICE.md](NOTICE.md).

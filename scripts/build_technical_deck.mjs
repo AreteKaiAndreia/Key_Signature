@@ -76,7 +76,7 @@ function scatter(s,points,xField,yField,groupFn,labels,colors,extra={}){
  text(s,'Key signature\nclassification',64,155,1120,190,68,'#FFFFFF',true);
  text(s,'Training, musical features and evaluation',68,405,1100,60,30,'#D9E6F4');
  text(s,'Ben Schwierking\n30 October 2026',68,570,900,80,25,'#D9E6F4');
- s.speakerNotes.text='Measured technical review of the v1 classifier and the opt-in v2 research experiments. Source repository: https://github.com/benschwierking/Key_Signature. Research outputs remain local pending data redistribution review.';
+ s.speakerNotes.text='Measured technical review of the v1 classifier and the opt-in v2 research experiments. Source repository: https://github.com/AreteKaiAndreia/Key_Signature. Research outputs remain local pending data redistribution review.';
 }
 // 2: Current method.
 {

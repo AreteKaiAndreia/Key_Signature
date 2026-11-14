@@ -1,0 +1,8 @@
+*
+!requirements.txt
+!packages.txt
+!.streamlit/
+!.streamlit/config.toml
+!keyclf/
+!keyclf/*.py
+!streamlit_app.py

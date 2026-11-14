@@ -125,13 +125,30 @@ def chroma_histogram(chroma: np.ndarray) -> np.ndarray:
     return histogram / total if total > 0 else np.full(12, 1.0 / 12.0)
 
 
-def extract_features(path: str | Path, config: FeatureConfig = DEFAULT_CONFIG) -> np.ndarray:
-    """Extract ``[first one-hot | last one-hot | histogram]`` from an audio file."""
-    y, sr = load_audio(path, sample_rate=config.sample_rate)
+def _trimmed_chroma(y: np.ndarray, sr: int, config: FeatureConfig) -> np.ndarray:
     trimmed, _ = librosa.effects.trim(y, top_db=config.silence_top_db)
     if trimmed.size:
         y = trimmed
-    chroma = compute_chroma(y, sr, chroma_type=config.chroma_type, hop_length=config.hop_length)
+    return compute_chroma(y, sr, chroma_type=config.chroma_type, hop_length=config.hop_length)
+
+
+def histogram_from_audio(y: np.ndarray, sr: int, config: FeatureConfig = DEFAULT_CONFIG) -> np.ndarray:
+    """Compute only the track-wide histogram from decoded mono samples."""
+    if sr != config.sample_rate:
+        raise ValueError("decoded audio does not match the model sample rate")
+    return chroma_histogram(_trimmed_chroma(y, sr, config))
+
+
+def extract_histogram(path: str | Path, config: FeatureConfig = DEFAULT_CONFIG) -> np.ndarray:
+    """Extract the original 12 chroma histogram values without edge features."""
+    y, sr = load_audio(path, sample_rate=config.sample_rate)
+    return histogram_from_audio(y, sr, config)
+
+
+def extract_features(path: str | Path, config: FeatureConfig = DEFAULT_CONFIG) -> np.ndarray:
+    """Extract ``[first one-hot | last one-hot | histogram]`` from an audio file."""
+    y, sr = load_audio(path, sample_rate=config.sample_rate)
+    chroma = _trimmed_chroma(y, sr, config)
     first, last = first_last_bins(chroma, edge_frames=config.edge_frames)
     vector = np.concatenate((first, last, chroma_histogram(chroma))).astype(float)
     if vector.shape != (36,) or not np.isfinite(vector).all():

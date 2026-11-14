@@ -12,7 +12,7 @@ This is the durable resume ledger for the key-signature classifier.
 
 - Local v1 accepted: **no**
 - Public release accepted: **no**
-- GitHub target: `benschwierking/Key_Signature` (public)
+- GitHub target: [`AreteKaiAndreia/Key_Signature`](https://github.com/AreteKaiAndreia/Key_Signature) (public)
 - Data publication: **blocked pending documented redistribution basis**
 
 ## Milestones
@@ -27,12 +27,68 @@ This is the durable resume ledger for the key-signature classifier.
 | Interpretive analysis and notebook | implemented | LR and RF paths plus exploration notebook added |
 | Streamlit application | complete | AppTest imports/runs; regular Streamlit selected after Stlite dependency review |
 | Strict C1–C7 acceptance | blocked by measured accuracy | C1 46.15% and C2 69.23% fail; C3–C7 pass |
-| Public GitHub source release | complete | Public `main` pushed to `benschwierking/Key_Signature`; source-only boundary verified |
+| Public GitHub source release | complete | Repository now under `AreteKaiAndreia/Key_Signature`; source-only boundary |
 | Accuracy research requested 2026-10-30 | complete, targets not met | 30 configurations, three development folds, one selected-model fixed-test evaluation; exact accuracy improved to 51.65% |
 | Technical PowerPoint requested 2026-10-30 | complete | 19 slides; editable charts/tables; all previews inspected and package/import/layout validation passed |
 | FMAKv2 expansion pilot | complete, mixed accuracy effect | 500/500 extracted; fresh FMAK accuracy 38.67% → 52.00%; unchanged GiantSteps benchmark 51.65% → 48.35%; default unchanged |
 
 ## Current checkpoint
+
+### Chroma-only, Hooktheory, and Community Cloud
+
+- Date: 2026-11-13 America/Los_Angeles. The matched ablation, annotation pilot,
+  held-out comparison, and local upload redesign are complete. The public app
+  and weights are held pending the decision in [DATA_PROVENANCE.md](DATA_PROVENANCE.md).
+- Frozen pilot: 500 of 9,699 eligible training excerpts, 300 major and 200 minor.
+  Manifest `66e9ae6d30a325829677ec59bcd61562553cf1e646d6b4501fbd4d1082b7ab09`.
+  Replaying `python -m keyclf.hooktheory && python -m keyclf.hook_experiment`
+  resumed all 500 rows and the frozen model receipt; no original recordings
+  fetched, no rendered audio retained, and no second test fit or scoring.
+- Unchanged recording splits: GiantSteps 422/91/91 and FMAK 350/75/75.
+  Excluded known FMAK and Sheet Sage held-out matches by identity; the locally
+  available GiantSteps data did not include artist/title identities. Held-out
+  tracks and labels were untouched. The test set contains zero renders.
+- Matched seeded 500-tree forest and twelve training transpositions for every
+  comparison. The 36-versus-12 comparison uses the same 513 GiantSteps
+  development recordings. Expanded refits use 938 real development recordings;
+  the Hooktheory candidate appends 500 weighted training-only renders. This is
+  a fresh matched experiment, separate from the earlier FMAK pilot below.
+
+| Matched fit | GiantSteps first guess | GiantSteps top three | FMAK first guess | FMAK top three |
+|---|---:|---:|---:|---:|
+| Chroma + beginning/ending (GiantSteps) | 42/91 (46.2%) | 66/91 (72.5%) | — | — |
+| Chroma only (GiantSteps) | 47/91 (51.6%) | 65/91 (71.4%) | 29/75 (38.7%) | 54/75 (72.0%) |
+| Chroma + FMAK data | 42/91 (46.2%) | 65/91 (71.4%) | 42/75 (56.0%) | 54/75 (72.0%) |
+| Chroma + FMAK + Hooktheory data | 45/91 (49.5%) | 64/91 (70.3%) | 41/75 (54.7%) | 54/75 (72.0%) |
+
+- Validation selected `hook-0.25` among weights 0.25, 0.5, and 1.0; it raised
+  mean first-guess validation accuracy from 50.0% to 59.6% over the
+  GiantSteps-only histogram, and GiantSteps validation rose from 51/91 to 55/91.
+  The held-out GiantSteps first-guess score was lower than the GiantSteps-only
+  histogram. The local upload app retains its Research default; the Cloud
+  artifact uses the choice frozen on validation.
+- Local artifacts: `data/work/hooktheory/{manifest.json,features.parquet,checkpoints/}`,
+  `reports/hooktheory/{selection.json,results.json}`,
+  `models/cloud_model.joblib` (179 MiB, version
+  `real-song-hist-ablation-hook-v1`, SHA-256
+  `184002c949d07c934e1fdbbdd9ccdecbf5d120821dfc01d871173d477f4cbd1a`).
+- Browser QA: initial upload, analysis spinner, and ranked results at 1280 px
+  and 390 px, including MP3/MP4 and the three local classifier choices.
+  Screenshots are under `reports/ui-checks/`. The local Cloud entry point ran
+  both engines on the same MP3. Recording controls and upload fallback were
+  checked without granting live microphone access. No public app was deployed.
+- Full strict pytest: **150 passed, 1 optional skip** (`reports/pytest-current.xml`).
+  Eight new tests cover direct histogram parity, label-blind renders,
+  duplicate exclusion, checkpoint interruption, both ranking engines on WAV,
+  MP3, and MP4, silence/corrupt/oversize handling, truncation, and rejected
+  weights. Original criteria replay: C3–C7 pass; C1/C2 remain below the 80%/95%
+  thresholds. Hosted real-data acceptance remains gated.
+- Clean Debian Linux x86-64 image with Python 3.11, FFmpeg, and Essentia
+  2.1b6.dev1389: application startup and both engines passed on synthetic WAV,
+  MP3, and MP4 with the actual model mounted read-only. The Essentia winner
+  and strength matched the native API. The initial forest deserialization
+  took 12 seconds in the emulated container; actual Community Cloud cold
+  start and memory limits still need verification after clearance.
 
 ### FMAKv2 expansion pilot 2026-11-10
 
@@ -48,7 +104,7 @@ This is the durable resume ledger for the key-signature classifier.
 - Pooled pilot exact: 76/166 → 83/166 (45.78% → 50.00%). This particular mixture improved, but the expansion did not improve the original benchmark. Cross-source remixes and artist overlap remain unverified. Keep Research as the app default, with the expansion opt-in.
 - Last successful checks: 142 passed, one optional skip (strict pytest, `reports/fmak-pilot/pytest.xml`); selection and test receipt replayed without fitting or evaluating again; actual Streamlit option verified. Expanded-path cold maximum 1.269 s on three synthetic 120-second MP3 calls, excluding model loading (`reports/fmak-pilot/latency.json`).
 - Local artifacts: `data/work/fmak-pilot/{manifest.json,features.parquet,checkpoints/}`, `reports/fmak-pilot/{selection.json,test_results.json}`, and `models/fmak_model.joblib`. The latter is available as **FMAK pilot (experimental)**. The original cache and models were not replaced.
-- Source and aggregate results published at `652074e` (integration `e34e12f`). [GitHub harness self-tests passed](https://github.com/benschwierking/Key_Signature/actions/runs/42972205742). Full hosted data acceptance was skipped under the existing redistribution gate.
+- Source and aggregate results published at `652074e` (integration `e34e12f`). [GitHub harness self-tests passed](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/42972205742). Full hosted data acceptance was skipped under the existing redistribution gate.
 
 ### Previous benchmark checkpoint
 
@@ -69,7 +125,7 @@ This is the durable resume ledger for the key-signature classifier.
 - Additional-data metadata: 1,349 single-key candidates (429 major / 920 minor), no exact ID or MD5 overlaps, 137 ambiguous/unknown entries recorded separately. No additional audio collected.
 - Source milestones: `c6e6d62` added the research pipeline; `d7fb278` fixed cold synthetic self-tests. The harness stand-in uses FFT/FFmpeg to avoid timing first-time numba compilation; real C3 still times the actual extractor with the unchanged strict limit and no warm-up.
 - Upload verification: synthetic WAV, MP3, MP4 decoding and Streamlit top-three/relative-key rendering passed all four smoke tests. The histogram-only research app fast path has its own regression test.
-- Final source verification: GitHub harness self-tests passed at `2764175b4e80eb02e9accbb503307dbe2c0824e1` (run [`41126521319`](https://github.com/benschwierking/Key_Signature/actions/runs/41126521319)). Full hosted acceptance remains intentionally pending an authorized cache. The following ledger-only handoff commit does not change tested code; resolve it with `git rev-parse HEAD`.
+- Final source verification: GitHub harness self-tests passed at `2764175b4e80eb02e9accbb503307dbe2c0824e1` (run [`41126521319`](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/41126521319)). Full hosted acceptance remains intentionally pending an authorized cache.
 - Environment: Python 3.11 virtualenv installed; ffmpeg available
 - Committed source milestones: `12e4b28` (v1 build) and `6291ad3` (acceptance diagnostics and handoff)
 - Blockers:
@@ -126,10 +182,9 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Resume invariant
 
-The FMA pilot is complete. It uses a frozen manifest and reuses compatible
-per-track checkpoints. It keeps the original benchmark intact and saves a separate model. The prior
-temporary runtime was cleaned up; the repository's Python 3.11 `.venv` was
-verified working on November 10. Do not publish
+The FMA and Hooktheory pilots use frozen manifests and reuse compatible
+per-track checkpoints. The original benchmark and model artifacts are intact.
+Do not publish
 `data/`, `models/`, or `reports/` unless `DATA_PROVENANCE.md` first records a
 valid redistribution basis. The commit containing this ledger is the current
 handoff commit (`git rev-parse HEAD`).
@@ -137,5 +192,5 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/streamlit run keyclf/app.py
+cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && KEYCLF_LOCAL_MODEL=1 .venv/bin/python -m streamlit run streamlit_app.py
 ```

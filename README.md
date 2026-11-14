@@ -55,11 +55,31 @@ the test split for selection.
 streamlit run keyclf/app.py
 ```
 
-Upload an MP3, MP4, or WAV to see the chroma histogram, first and last pitch
-classes, predicted key, confidence, and related-key-aware top three.
+Upload an MP3, MP4, or WAV to see the detected key, model confidence, the top
+three guesses, and the track's chroma distribution. The classifier selector
+offers the locally trained models.
 
-The v1 deployment target is regular Streamlit. The browser-only Stlite attempt
-and dependency limitation are recorded in [`DEPLOYMENT.md`](DEPLOYMENT.md).
+The separate Community Cloud entry point, `streamlit_app.py`, also accepts a
+microphone recording and lets you choose between the chroma-only forest and
+Essentia's Krumhansl–Schmuckler scores. See [deployment and local run instructions](DEPLOYMENT.md).
+Public hosting awaits documented permission to distribute the trained weights.
+
+## Held-out chroma and Hooktheory comparison
+
+| Training setup | GiantSteps first / top three | FMAK first / top three |
+|---|---|---|
+| GiantSteps, chroma plus first and last pitch summaries | 42/91 (46.2%) / 66/91 (72.5%) | — |
+| GiantSteps, chroma only | 47/91 (51.6%) / 65/91 (71.4%) | 29/75 (38.7%) / 54/75 (72.0%) |
+| GiantSteps + FMAK, chroma only | 42/91 (46.2%) / 65/91 (71.4%) | 42/75 (56.0%) / 54/75 (72.0%) |
+| GiantSteps + FMAK + 500 Hooktheory renders, chroma only | 45/91 (49.5%) / 64/91 (70.3%) | 41/75 (54.7%) / 54/75 (72.0%) |
+
+All four runs used the same 500-tree forest settings and transposition
+augmentation. Hooktheory examples were weighted at 0.25, selected on real-audio
+validation before testing. The held-out effect was mixed. Both test sets contain
+only real recordings. Run `python -m keyclf.hooktheory` and then
+`python -m keyclf.hook_experiment` with the existing GiantSteps and FMAK caches
+to reproduce or resume the comparison. See the [status ledger](IMPLEMENTATION_STATUS.md)
+for measured details and [data provenance](DATA_PROVENANCE.md) for limitations.
 
 ## Accuracy research
 

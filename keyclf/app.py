@@ -13,6 +13,7 @@ import streamlit as st
 
 from keyclf.features import FeatureConfig, extract_features, feature_names
 from keyclf.keys import KEY_NAMES, is_related
+from keyclf.studio import STUDIO_CSS, STUDIO_HEADER
 
 
 @st.cache_resource
@@ -60,30 +61,39 @@ def prepare_input(path: str | Path, metadata: dict) -> tuple[np.ndarray, np.ndar
 
 
 def render_result(vector: np.ndarray, probability: np.ndarray) -> None:
-    """Render the histogram, edge bins, and related-aware top predictions."""
-    best = int(probability.argmax())
-    first, last = int(vector[:12].argmax()), int(vector[12:24].argmax())
-    st.subheader(f"Predicted key: {KEY_NAMES[best]}")
-    st.metric("Confidence", f"{probability[best]:.1%}")
-    left, right = st.columns(2)
-    left.metric("First chroma bin", KEY_NAMES[first].split()[0])
-    right.metric("Last chroma bin", KEY_NAMES[last].split()[0])
-    chart_data = pd.DataFrame({"pitch class": [name.split()[0] for name in KEY_NAMES[:12]],
-                               "energy": vector[24:36]})
-    st.altair_chart(alt.Chart(chart_data).mark_bar().encode(
-        x=alt.X("pitch class:N", sort=None), y=alt.Y("energy:Q"), tooltip=["pitch class", "energy"]
-    ).properties(title="Track-wide chroma histogram"), use_container_width=True)
-    st.subheader("Top three")
-    for rank, key in enumerate(np.argsort(probability)[::-1][:3], start=1):
-        related = " — related key" if key != best and is_related(best, int(key)) else ""
-        st.write(f"{rank}. **{KEY_NAMES[int(key)]}** — {probability[int(key)]:.1%}{related}")
+    """Lead with the detected key and keep diagnostic evidence secondary."""
+    order = np.argsort(-probability, kind="stable")[:3]
+    best = int(order[0])
+    st.html(f"""<section class="studio-result" aria-label="Detected key">
+      <p class="studio-kicker">Detected key</p>
+      <h2>{KEY_NAMES[best]}</h2>
+      <p class="studio-confidence"><strong>{probability[best]:.1%}</strong> model confidence</p>
+    </section>""")
+    with st.container(key="result_details"):
+        st.html('<h3 class="studio-section">Top three keys</h3>')
+        for rank, key in enumerate(order, start=1):
+            related = " — related key" if key != best and is_related(best, int(key)) else ""
+            st.markdown(f"{rank}. **{KEY_NAMES[int(key)]}** — {probability[int(key)]:.1%}{related}")
+        st.html('<h3 class="studio-section">Chroma distribution</h3>')
+        chart_data = pd.DataFrame({"pitch class": [name.split()[0] for name in KEY_NAMES[:12]],
+                                   "energy": vector[24:36]})
+        chart = alt.Chart(chart_data).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, color="#b8db84").encode(
+            x=alt.X("pitch class:N", sort=None, title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("energy:Q", title=None, axis=alt.Axis(format="%", tickCount=3)),
+            tooltip=[alt.Tooltip("pitch class:N"), alt.Tooltip("energy:Q", format=".1%")],
+        ).properties(height=125)
+        st.altair_chart(chart, width="stretch")
 
 
 def main() -> None:
     """Run the Streamlit application."""
-    st.set_page_config(page_title="Key Signature Classifier", page_icon="🎼")
-    st.title("Key Signature Classifier")
-    st.caption("Audio key prediction from pitch-class features")
+    st.set_page_config(page_title="Key Signature Classifier", page_icon="🎼", layout="centered")
+    st.html(STUDIO_CSS)
+    st.html(STUDIO_HEADER)
+    with st.container(key="track_input", border=True):
+        st.html('<h2 class="studio-upload-title">Upload a track</h2>'
+                '<p class="studio-upload-hint">Choose a file to detect its key automatically.</p>')
+        upload = st.file_uploader("Upload a track", type=["mp3", "mp4", "wav"], label_visibility="collapsed")
     available = {label: Path(filename) for label, filename in (
         ("Original", "models/model.joblib"), ("Research", "models/research_model.joblib"),
         ("FMAK pilot (experimental)", "models/fmak_model.joblib"),
@@ -95,17 +105,20 @@ def main() -> None:
     default = options.index("Research") if "Research" in available else 0
     choice = st.selectbox("Classifier", options, index=default) if len(options) > 1 else options[0]
     model_path = available[choice]
-    upload = st.file_uploader("Upload a song", type=["mp3", "mp4", "wav"])
     if upload is None:
         return
-    estimator, metadata = load_artifact(str(model_path))
     suffix = Path(upload.name).suffix.lower() or ".audio"
-    with tempfile.NamedTemporaryFile(suffix=suffix) as temporary:
-        temporary.write(upload.getbuffer())
-        temporary.flush()
-        with st.spinner("Extracting chroma and predicting the key…"):
-            vector, model_input = prepare_input(temporary.name, metadata)
+    try:
+        with st.spinner("Analyzing your track…", show_time=True):
+            estimator, metadata = load_artifact(str(model_path))
+            with tempfile.NamedTemporaryFile(suffix=suffix) as temporary:
+                temporary.write(upload.getbuffer())
+                temporary.flush()
+                vector, model_input = prepare_input(temporary.name, metadata)
             probability = probability_24(estimator, model_input, metadata)
+    except (OSError, RuntimeError, ValueError):
+        st.error("This track couldn’t be analyzed. Try a valid MP3, MP4 with audio, or WAV file.")
+        return
     render_result(vector, probability)
 
 

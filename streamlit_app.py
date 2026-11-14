@@ -16,7 +16,7 @@ from keyclf.cloud_audio import decode_clip
 from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, rank_three, released_model
 from keyclf.keys import PITCH_NAMES
 from keyclf.open_candidate import CandidateKeyModel
-from keyclf.studio import STUDIO_CSS, STUDIO_HEADER
+from keyclf.studio import STUDIO_HEADER, studio_css
 from threadpoolctl import threadpool_limits
 
 ML = "Research ML (random forest)"
@@ -91,7 +91,7 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
 def main() -> None:
     """Offer both public engines and the research forest when configured."""
     st.set_page_config(page_title="Key Signature Classifier", layout="centered")
-    st.html(STUDIO_CSS)
+    st.html(studio_css())
     st.html(STUDIO_HEADER)
     allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
     model_url = os.environ.get("KEYCLF_MODEL_URL", "")

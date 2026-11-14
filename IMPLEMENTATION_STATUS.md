@@ -58,6 +58,9 @@ This is the durable resume ledger for the key-signature classifier.
 - Strict pytest finished with 150 passes and one optional skip. The
   [GitHub harness self-tests](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43652398951)
   passed on the redesign commit.
+- The phone toolbar uses a solid background so it remains legible while
+  scrolling. Both entry points reload the stylesheet on each Streamlit run
+  so a CSS-only change reaches existing Cloud workers on rerun.
 
 ### Publishable custom model
 

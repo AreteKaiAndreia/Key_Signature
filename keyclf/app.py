@@ -13,7 +13,7 @@ import streamlit as st
 
 from keyclf.features import FeatureConfig, extract_features, feature_names
 from keyclf.keys import KEY_NAMES, is_related
-from keyclf.studio import STUDIO_CSS, STUDIO_HEADER
+from keyclf.studio import STUDIO_HEADER, studio_css
 
 
 @st.cache_resource
@@ -88,7 +88,7 @@ def render_result(vector: np.ndarray, probability: np.ndarray) -> None:
 def main() -> None:
     """Run the Streamlit application."""
     st.set_page_config(page_title="Key Signature Classifier", layout="centered")
-    st.html(STUDIO_CSS)
+    st.html(studio_css())
     st.html(STUDIO_HEADER)
     with st.container(key="track_input", border=True):
         st.html('<h2 class="studio-upload-title">Upload a track</h2>'

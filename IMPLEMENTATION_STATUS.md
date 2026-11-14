@@ -47,9 +47,17 @@ This is the durable resume ledger for the key-signature classifier.
   GiantSteps was **47/91 (51.6%) first** and **67/91 (73.6%) top three**.
   FMAK was **40/75 (53.3%) first** and **56/75 (74.7%) top three**. The model
   SHA-256 remains `0ca344dd5d21b0153df0a93e9010858f59a45a64ace963366a81f2fc7ff2a92a`.
-- Hosted verification pending. After this commit deploys, open the
-  [public app](https://aretekaiandreia-key-signature.streamlit.app/) signed out
-  and exercise MP3, MP4 and microphone recording through Analyze.
+- The [public app](https://aretekaiandreia-key-signature.streamlit.app/) loaded
+  signed out from `62b5bf4`. A synthetic C-major MP3 on desktop and MP4 at
+  390 px both returned C major plus two alternate keys and 12 pitch bins.
+  Switching to Essentia reused the MP3 and returned C major as well. Upload,
+  loading and results captures are under `reports/ui-checks/hallmark-public-*`.
+- The live recorder control is enabled. A local Streamlit test injected a
+  recorded-format WAV into the recording path and returned C major. The
+  browser microphone capture and analysis check awaits a hardware test.
+- Strict pytest finished with 150 passes and one optional skip. The
+  [GitHub harness self-tests](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43652398951)
+  passed on the redesign commit.
 
 ### Publishable custom model
 
@@ -273,5 +281,8 @@ handoff commit (`git rev-parse HEAD`).
 ## Exact next action
 
 ```bash
-cd "/Users/ben/Desktop/ML and Big Data/Key_Signature/keyclf-harness" && .venv/bin/python -m streamlit run streamlit_app.py
+open 'https://aretekaiandreia-key-signature.streamlit.app/'
 ```
+
+Select **Record a soundbite**, grant microphone access for the test, record a
+short chord or melody, stop, then select **Analyze** and record the result here.

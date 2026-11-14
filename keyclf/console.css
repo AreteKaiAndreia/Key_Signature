@@ -23,7 +23,7 @@ button:focus-visible, a:focus-visible, input:focus-visible,
   margin-inline: auto;
   padding: var(--space-xl) var(--space-lg);
 }
-[data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeader"] { background: var(--color-paper); }
 .stMain :is(p, button, input, label, small), [role="option"] { font-family: var(--font-body); }
 .stMain button { white-space: nowrap; border-radius: var(--radius-control); }
 .stMain button:active:not(:disabled) { filter: brightness(.88); }
@@ -141,7 +141,7 @@ button:focus-visible, a:focus-visible, input:focus-visible,
 .studio-footer a { white-space: nowrap; }
 
 @media (max-width: 42rem) {
-  .stMainBlockContainer { padding: var(--space-xl) var(--space-md) var(--space-md); }
+  .stMainBlockContainer { padding: var(--space-xl) var(--space-md) calc(var(--space-xl) + var(--space-md)); }
   .st-key-console_workbench [data-testid="stHorizontalBlock"] { display: block; }
   .st-key-console_workbench [data-testid="stColumn"] { width: 100% !important; flex: 1 1 100%; }
   .st-key-console_workbench [data-testid="stColumn"] + [data-testid="stColumn"] { margin-top: var(--space-lg); }

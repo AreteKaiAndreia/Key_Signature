@@ -61,7 +61,8 @@ offers the locally trained models.
 
 The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
 recording or MP3/MP4 and ranks three keys with Essentia's Krumhansl–Schmuckler
-scores. The custom forest is available as a local option. See
+scores. [Open the public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/).
+The custom forest is available as a local option. See
 [deployment and local run instructions](DEPLOYMENT.md).
 
 ## Held-out chroma and Hooktheory comparison

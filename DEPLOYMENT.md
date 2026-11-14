@@ -2,6 +2,8 @@
 
 ## Essentia app for Community Cloud
 
+[Public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
+
 Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced
 settings. Leave Secrets empty. The app uses Essentia's Krumhansl–Schmuckler

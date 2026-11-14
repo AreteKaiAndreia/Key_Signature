@@ -89,13 +89,16 @@ IDs were unchanged, and no synthesized clips entered either test set.
 
 ### Hosted model decision
 
-**Blocked.** No hosting or redistribution basis is documented for the
-selected `hook-0.25` weights. The licensing evidence above does not clear that
-specific combined artifact: it was fitted using GiantSteps, a mix of track
-terms from FMA, and the Sheet Sage research annotations. Do not upload the
-weights to GitHub Releases or enable the public custom engine until permission or a
-license basis for hosting and distribution of the exact artifact is recorded
-here. Source code and aggregate results can be published separately. The
-license for the hosted software is documented in [NOTICE.md](NOTICE.md).
-The Essentia app uses fixed key profiles and needs no trained weights or
-project datasets.
+The project's release plan keeps the custom `hook-0.25` forest local until it
+documents a basis for hosting or distributing the exact artifact. The exported
+forest stores learned split thresholds and class counts from 12-value chroma
+summaries. The release code packages the estimator and model metadata.
+The dataset references above describe the training inputs. We found no
+explicit provision in those references that prohibits sharing this fitted
+forest. Whether a dataset license applies to the exported model depends on
+the license and what the artifact contains. See
+[Creative Commons' analysis of licenses and trained models](https://creativecommons.org/using-cc-licensed-works-for-ai-training-2/).
+
+The [public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
+uses fixed key profiles and needs no trained weights or project datasets.
+See [NOTICE.md](NOTICE.md) for the hosted software licenses.

@@ -41,10 +41,14 @@ This is the durable resume ledger for the key-signature classifier.
 - The Essentia-only configuration passed app checks in Linux with synthetic
   MP3, MP4, and recorded-format WAV inputs. All three ranked C major first
   for the C-major chord. The eight existing audio and research tests passed.
-- Streamlit Community Cloud is awaiting the owner's sign-in and any GitHub
-  authorization prompt. Then deploy `AreteKaiAndreia/Key_Signature` from
-  `main`, entry point `streamlit_app.py`, Python 3.11, with empty secrets.
-  Verify the public URL with a synthetic upload.
+- The owner completed GitHub authorization. The
+  [public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
+  is live on Streamlit Community Cloud from `main`, entry point
+  `streamlit_app.py`, Python 3.11, with empty secrets.
+- Verified the public URL while signed out. A synthetic C-major MP3 ranked
+  C major, E minor, and G major in that order. Evidence is in
+  `reports/ui-checks/streamlit-public-result.jpg`. The original v1 accuracy
+  and data publication gates above apply to the custom model.
 
 ### Chroma-only, Hooktheory, and Community Cloud
 

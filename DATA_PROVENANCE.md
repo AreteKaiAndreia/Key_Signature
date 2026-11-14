@@ -102,3 +102,30 @@ the license and what the artifact contains. See
 The [public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
 uses fixed key profiles and needs no trained weights or project datasets.
 See [NOTICE.md](NOTICE.md) for the hosted software licenses.
+
+## Training sources for the open key model
+
+The new models use 480 original generated musical phrases and 662 loops from
+[Ramires et al., The Freesound Loop Dataset and Annotation Tool](https://doi.org/10.5281/zenodo.3967852)
+(ISMIR 2020). The generator synthesizes bass, chords, and melody directly
+from seeded note events. It uses no samples or score transcriptions. The
+Freesound subset contains 356 CC0 1.0 and 306 CC BY 3.0 sounds, as listed for
+each recording in the publisher's archive metadata. It uses only consistent
+human major/minor key annotations. The pipeline checks the annotation
+archive's published checksum and the selected ZIP members' CRCs. It saves
+pitch summaries and audit metadata locally. Per-sound credit and license
+links are recorded in [FREESOUND_CREDITS.tsv](FREESOUND_CREDITS.tsv).
+
+GiantSteps and FMAK are used to compare candidates and evaluate the final
+one on their existing held-out partitions. The fit uses only Freesound and
+generated phrases. Hooktheory is outside this training run. No audio,
+annotation archives, per-recording features, or benchmark labels are part
+of the open model artifact.
+
+The [public artifact](keyclf/open_key_model.json) contains the selected
+network's numerical coefficients and class names. SHA-256
+`0ca344dd5d21b0153df0a93e9010858f59a45a64ace963366a81f2fc7ff2a92a`.
+The original training and inference code and project contributions to this
+artifact are available under [MIT](LICENSE). Freesound material keeps its
+per-sound CC0 or CC BY terms. The combined web app includes the AGPL
+Essentia dependency described in [NOTICE.md](NOTICE.md).

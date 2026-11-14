@@ -1,14 +1,15 @@
 # Running and deploying the apps
 
-## Essentia app for Community Cloud
+## Public app on Community Cloud
 
-[Public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/)
+[Public key classifier](https://aretekaiandreia-key-signature.streamlit.app/)
 
 Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced
-settings. Leave Secrets empty. The app uses Essentia's Krumhansl–Schmuckler
-scoring and ranks three keys. It accepts a microphone recording or an
-MP3/MP4 upload and analyzes up to 120 seconds.
+settings. Leave Secrets empty. The app defaults to the custom classifier
+bundled as `keyclf/open_key_model.json`. The engine selector also offers
+Essentia's Krumhansl–Schmuckler scores. Both rank three keys from a microphone
+recording or an MP3/MP4 upload, with a 120-second analysis limit.
 
 The owner signs in at [Streamlit Community Cloud](https://share.streamlit.io/)
 and completes any GitHub connection prompt. See the
@@ -22,7 +23,7 @@ python -m pip install -r requirements.txt
 python -m streamlit run streamlit_app.py
 ```
 
-## Optional custom forest
+## Optional research forest
 
 From the repository root, after the local feature caches and the deployment
 weights have been built:

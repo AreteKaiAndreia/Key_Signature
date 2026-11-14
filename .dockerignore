@@ -5,4 +5,5 @@
 !.streamlit/config.toml
 !keyclf/
 !keyclf/*.py
+!keyclf/open_key_model.json
 !streamlit_app.py

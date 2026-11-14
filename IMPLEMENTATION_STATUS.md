@@ -34,6 +34,43 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Publishable custom model
+
+- Target: at least 50% first choice and 70% top three on each unchanged
+  GiantSteps and FMAK test partition before releasing a custom engine.
+- The existing forest has no identified blanket publication ban. Its training
+  corpus has mixed terms, and its frozen GiantSteps test result misses the
+  new first-choice threshold (45/91). Train a new model from original synthetic
+  material and permissively licensed recordings. Use GiantSteps and FMAK
+  only for validation and final testing.
+- Freesound Loop Dataset work is checkpointed under `data/work/open-key`.
+  The official ZIP supports bounded byte ranges. The license and human
+  annotation filters found 666 eligible members. The first pass retained
+  662 unique loops (356 CC0 and 306 CC BY), with three rate-limited entries
+  and one too short. It also generated features for 480 original phrases.
+- Chroma-only logistic regression with Krumhansl–Schmuckler scores was chosen
+  on validation. Held-out FMAK 47/75 first and 56/75 top three, GiantSteps
+  41/91 first and 63/91 top three. This candidate failed the joint threshold.
+  The frozen selection, artifact, and receipt are in `reports/open-key/`.
+- Linear chroma, harmonic and bass model reached 45/91 first and 67/91 top
+  three on GiantSteps and 39/75 first and 57/75 top three on FMAK. It missed
+  the GiantSteps first-choice threshold by one track.
+- The selected nonlinear model scores each of 24 keys with a shared
+  feedforward network and three 12-bin pitch summaries rotated to the
+  candidate tonic. It was fitted on 662 Freesound loops and 480 original
+  phrases. Candidate selection used 513 GiantSteps development tracks and
+  75 FMAK validation tracks. Neither benchmark contributed fitted examples.
+  Configuration and JSON SHA-256 were frozen before held-out evaluation.
+- Held-out GiantSteps: **47/91 first (51.6%), 67/91 top three (73.6%)**.
+  Held-out FMAK: **40/75 first (53.3%), 56/75 top three (74.7%)**.
+  All four targets passed. This was the third candidate family evaluated
+  on the same benchmarks. Use a fresh holdout for future claims of
+  performance on completely unseen recordings.
+- Artifacts and receipts are under `reports/open-key-candidate/`. The
+  published model is `keyclf/open_key_model.json`. Public app verification
+  is the remaining step. For a local rerun of the frozen gate, run
+  `.venv/bin/python -m keyclf.train_open_candidate --final`.
+
 ### Essentia-only public app
 
 - The Community Cloud entry point uses Essentia when no forest is configured.

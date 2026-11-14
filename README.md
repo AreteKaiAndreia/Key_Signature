@@ -60,10 +60,18 @@ three guesses, and the track's chroma distribution. The classifier selector
 offers the locally trained models.
 
 The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
-recording or MP3/MP4 and ranks three keys with Essentia's Krumhansl–Schmuckler
-scores. [Open the public Essentia app](https://aretekaiandreia-key-signature.streamlit.app/).
-The custom forest is available as a local option. See
-[deployment and local run instructions](DEPLOYMENT.md).
+recording or MP3/MP4 and ranks three keys with the custom model or Essentia.
+The custom model learns from overall chroma, harmonic chroma, and bass
+chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
+original synthetic phrases. [Open the public app](https://aretekaiandreia-key-signature.streamlit.app/).
+
+| Held-out set | First choice | Top three |
+|---|---:|---:|
+| GiantSteps | 47/91 (51.6%) | 67/91 (73.6%) |
+| FMAK | 40/75 (53.3%) | 56/75 (74.7%) |
+
+See [deployment and local run instructions](DEPLOYMENT.md) and
+[training data provenance](DATA_PROVENANCE.md#training-sources-for-the-open-key-model).
 
 ## Held-out chroma and Hooktheory comparison
 

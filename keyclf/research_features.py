@@ -73,6 +73,11 @@ def aggregate_research_blocks(
 def extract_research_features(path: str | Path) -> tuple[np.ndarray, dict]:
     """Extract 180 pitch-class features plus diagnostic beat metadata."""
     y, sr = load_audio(path)
+    return research_features_from_audio(y, sr)
+
+
+def pitch_blocks_from_audio(y: np.ndarray, sr: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Extract full-range, harmonic, and bass chroma plus percussive audio."""
     y, _ = librosa.effects.trim(y, top_db=60)
     if not y.size:
         y = np.zeros(4096)
@@ -83,14 +88,26 @@ def extract_research_features(path: str | Path) -> tuple[np.ndarray, dict]:
     harmonic /= np.maximum(harmonic.max(axis=0, keepdims=True), 1e-10)
     bass = cqt[:36].reshape(3, 12, -1).sum(axis=0)
     bass /= np.maximum(bass.max(axis=0, keepdims=True), 1e-10)
+    return chroma, harmonic, bass, percussive
+
+
+def research_features_from_audio(y: np.ndarray, sr: int) -> tuple[np.ndarray, dict]:
+    """Analyze decoded audio using the same research feature layout."""
+    chroma, harmonic, bass, percussive = pitch_blocks_from_audio(y, sr)
     onset = librosa.onset.onset_strength(y=percussive, sr=sr, hop_length=512)
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset, sr=sr, hop_length=512, trim=False)
     blocks = aggregate_research_blocks(chroma, harmonic, bass, beats, onset)
     return np.concatenate(list(blocks.values())), {
         "tempo_bpm": float(np.asarray(tempo).reshape(-1)[0]), "beat_count": len(beats),
-        "duration_s": len(y) / sr, "bar_downbeats_estimated": False,
+        "duration_s": len(percussive) / sr, "bar_downbeats_estimated": False,
         "note_events_transcribed": False,
     }
+
+
+def release_histograms(y: np.ndarray, sr: int) -> np.ndarray:
+    """Three normalized pitch summaries with the existing research definitions."""
+    chroma, harmonic, bass, _ = pitch_blocks_from_audio(y, sr)
+    return np.stack([normalize(matrix.sum(axis=1)) for matrix in (chroma, harmonic, bass)])
 
 
 def build_research_cache(annotations: Path, work: Path, output: Path, workers: int = 2, limit: int | None = None) -> dict:

@@ -48,6 +48,12 @@ This is the durable resume ledger for the key-signature classifier.
 - Reproduce using `.venv/bin/python -m keyclf.evaluate_relative_pairs`.
   It verifies the model hash and original exact-key counts before writing
   `reports/open-key-candidate/relative-pairs.json`.
+- Streamlit loaded the updated app from `9872657` after moving the new
+  ranking into its own module to avoid a stale worker import. In a signed-out
+  browser, both engines returned C major / A minor and two other pairs for
+  the same synthetic MP4. Captures are in `reports/ui-checks/relative-pairs-*`.
+  Strict pytest passed 151 tests with one optional skip. The regression test
+  passed again after moving the module. [GitHub harness self-tests passed](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43655765312).
 
 ### Hallmark redesign and public app verification
 

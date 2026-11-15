@@ -34,6 +34,21 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Microphone noise handling
+
+- Microphone recordings pass through a noise filter before either prediction
+  engine sees them. It attenuates electrical hum and diffuse background noise,
+  skips frames without sustained pitch, and shows a retry message when the
+  resulting chroma is nearly flat. MP3/MP4 decoding uses the existing path.
+- On 12 synthetic music clips mixed with broadband noise or fan-like noise,
+  the custom model's first-pair count went from 4/12 to 10/12. Essentia's
+  exact first-key count went from 11/12 to 12/12. These are microphone-path
+  development checks with simulated noise.
+- The Streamlit integration test fed a 44.1 kHz noisy WAV through the
+  recording control and returned C major / A minor. The same test then
+  passed noise alone through the control and verified the retry message.
+  Separate noise-only tests cover broadband noise and 50/60 Hz hum.
+
 ### Relative keys on the public app
 
 - The [public address](https://musickeyanalyzer.streamlit.app/) uses the dash-free subdomain.

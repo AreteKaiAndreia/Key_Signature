@@ -12,9 +12,10 @@ from threading import Lock
 import requests
 import streamlit as st
 
-from keyclf.cloud_audio import decode_clip
+from keyclf.cloud_audio import SAMPLE_RATE, decode_clip
 from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
 from keyclf.keys import PITCH_NAMES, key_name
+from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
 from keyclf.open_candidate import CandidateKeyModel
 from keyclf.relative_pairs import rank_relative_pairs
 from keyclf.studio import STUDIO_HEADER, studio_css
@@ -110,9 +111,10 @@ def main() -> None:
             with st.container(key="track_input"):
                 source = st.radio("Audio source", ["Upload MP3/MP4", "Record a soundbite"],
                                   horizontal=True, label_visibility="collapsed")
-                if source == "Record a soundbite":
+                recording = source == "Record a soundbite"
+                if recording:
                     clip = st.audio_input("Record a soundbite", sample_rate=44100, label_visibility="collapsed")
-                    st.caption("Allow microphone access when prompted. If it’s blocked, use the file upload option.")
+                    st.caption("Record 5–15 seconds close to the music. Include a few notes or chords.")
                 else:
                     clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")
                 st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
@@ -121,7 +123,7 @@ def main() -> None:
             analyze = st.button("Analyze", type="primary", disabled=not content)
         readout = output.empty()
     predictions = st.session_state.setdefault("relative_pair_predictions", {})
-    identity = hashlib.sha256(content).hexdigest() if content else None
+    identity = (source, hashlib.sha256(content).hexdigest()) if content else None
     if st.session_state.get("clip_id") != identity:
         st.session_state["clip_id"] = identity
         predictions.clear()
@@ -139,7 +141,9 @@ def main() -> None:
                     revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
                     model, variant, version = get_model(model_url, model_sha, allow_local, revision)
                     model_label = f"{variant} ({version})"
-                samples, clipped = decode_clip(content, "recording.wav" if source == "Record a soundbite" else clip.name)
+                samples, clipped = decode_clip(content, "recording.wav" if recording else clip.name)
+                if recording:
+                    samples = clean_recording(samples, SAMPLE_RATE)
                 if engine == OPEN_ML:
                     with threadpool_limits(limits=1):
                         profile, scores = get_open_model().score_audio(samples)
@@ -147,6 +151,8 @@ def main() -> None:
                     profile, scores = essentia_scores(samples)
                 else:
                     profile, scores = custom_scores(model, samples)
+                if recording and max(profile) - min(profile) < MIN_CHROMA_SPREAD:
+                    raise ValueError(NO_SIGNAL)
                 predictions[engine] = (rank_relative_pairs(scores)[:3], profile.tolist(), clipped, model_label)
             except (ValueError, RuntimeError, FileNotFoundError) as exc:
                 error = str(exc)

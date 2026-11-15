@@ -7,8 +7,6 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import soundfile as sf
-import streamlit as st
-from streamlit.testing.v1 import AppTest
 
 from keyclf.cloud_audio import SAMPLE_RATE
 from keyclf.microphone import NO_SIGNAL, clean_recording
@@ -28,6 +26,9 @@ def test_recording_rejects_room_noise_without_music(hum_hz):
 
 
 def test_noisy_microphone_wav_reaches_the_prediction_readout():
+    import streamlit as st
+    from streamlit.testing.v1 import AppTest
+
     recorder_rate = 44100
     time = np.arange(5 * recorder_rate) / recorder_rate
     noise = 0.2 * np.random.default_rng(75).normal(size=time.size)

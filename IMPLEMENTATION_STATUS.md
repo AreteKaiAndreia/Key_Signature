@@ -48,10 +48,15 @@ This is the durable resume ledger for the key-signature classifier.
   exact counts were 40/61 on GiantSteps and 36/55 on FMAK for the forest,
   and 40/60 on GiantSteps and 38/57 on FMAK for boosting. Denominators are
   91 and 75. Full counts are in `reports/open-key-trees/test.json`.
-- Next deployment verification:
-  `gh workflow run public-svm-smoke.yml --ref main`. The hosted browser
-  switches through the five public engines during a single microphone take
-  and checks automatic results for MP3, MP4, and the finished recording.
+- Deployed from `e3c0c14`. The [signed-out browser test](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43947666469)
+  confirmed Neural Network as the default, switched through all five public
+  engines during a single virtual-microphone take, and saw three pairs from
+  each while recording. MP3, MP4, and Stop triggered results automatically.
+  Screenshots are in `reports/live-key-pairs/`.
+- Strict pytest passed 156 tests with one optional skip. The
+  [GitHub harness self-tests](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43947622529)
+  passed. Repeat the hosted verification with
+  `gh workflow run public-svm-smoke.yml --ref main`.
 
 ### Live microphone histogram
 

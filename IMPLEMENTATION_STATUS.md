@@ -43,10 +43,15 @@ This is the durable resume ledger for the key-signature classifier.
   The export matched all 24 key ranks on 604 GiantSteps and 150 FMAK clips
   and reproduced the held-out counts. Only the numerical coefficients are
   bundled. See [data provenance](DATA_PROVENANCE.md#training-sources-for-the-open-key-model).
-- Next verification after the source push: run
-  `gh workflow run public-svm-smoke.yml --ref main` against the public
-  deployment. It tests MP3, MP4, and a browser-captured synthetic microphone
-  clip in a fresh signed-out session.
+- Deployed from `ff13514`. A signed-out browser confirmed Custom ML as
+  the default. The [public browser check](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43937718933)
+  selected Linear SVM and returned C major / A minor with two alternatives
+  for MP3, MP4, and a five-second recording made through a virtual microphone.
+  Screenshots are in `reports/public-svm-smoke/`.
+- Strict pytest passed 156 tests with one optional skip. The
+  [GitHub harness self-tests](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43937460235)
+  passed. Rerun the hosted check with
+  `gh workflow run public-svm-smoke.yml --ref main`.
 
 ### Linear and RBF SVM comparison
 

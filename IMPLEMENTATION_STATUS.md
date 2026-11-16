@@ -44,10 +44,15 @@ This is the durable resume ledger for the key-signature classifier.
   uploads. Its recording analysis encountered a cached decoder that did
   not support the recorder's compressed format. The browser now sends
   WAV, the existing server recording format.
-- Next verification after deploy:
-  `gh workflow run public-svm-smoke.yml --ref main`. The browser check
-  feeds a synthetic chord into a virtual microphone and requires C, E, and
-  G bars before stopping, then checks the final key pair and both uploads.
+- The [signed-out browser check](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43940761650)
+  passed on `da8d110`. With the recorder still running, the virtual
+  microphone produced C, E, and G bars before Analyze was available.
+  Stopping and analyzing produced C major / A minor. MP3, MP4, and clearing
+  the recording also passed. Browser screenshots are in the run artifact.
+- Strict pytest passed 156 tests with one optional skip. The
+  [GitHub harness self-tests](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43940721143)
+  passed. Repeat the hosted check with
+  `gh workflow run public-svm-smoke.yml --ref main`.
 
 ### Linear SVM public option
 

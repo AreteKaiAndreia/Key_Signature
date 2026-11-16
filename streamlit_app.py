@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Streamlit key detection with the open-trained model and Essentia."""
+"""Streamlit key detection with open-trained models and Essentia."""
 
 from __future__ import annotations
 
@@ -17,12 +17,14 @@ from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, re
 from keyclf.keys import PITCH_NAMES, key_name
 from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
 from keyclf.open_candidate import CandidateKeyModel
+from keyclf.open_linear_svm import LinearKeySVM
 from keyclf.relative_pairs import rank_relative_pairs
 from keyclf.studio import STUDIO_HEADER, studio_css
 from threadpoolctl import threadpool_limits
 
 ML = "Research ML (random forest)"
 OPEN_ML = "Custom ML (open-trained)"
+LINEAR_SVM = "Linear SVM"
 KS = "Essentia (Krumhansl–Schmuckler)"
 LOCAL = Path(__file__).resolve().parent / "models" / "cloud_model.joblib"
 OPEN_ARTIFACT = Path(__file__).resolve().parent / "keyclf" / "open_key_model.json"
@@ -50,7 +52,13 @@ def get_open_model() -> CandidateKeyModel:
     return CandidateKeyModel.load(OPEN_ARTIFACT)
 
 
-def render_readout(stage: str, result=None, message: str = "", *, essentia: bool = False) -> str:
+@st.cache_resource(show_spinner=False)
+def get_linear_svm() -> LinearKeySVM:
+    """Cache the published SVM coefficients for the hosted app."""
+    return LinearKeySVM.load()
+
+
+def render_readout(stage: str, result=None, message: str = "", *, engine: str = OPEN_ML) -> str:
     """Render the same readout through empty, loading, error, and full states."""
     header = '<section class="studio-result" aria-labelledby="readout-title"><h2 class="studio-panel-title" id="readout-title">Detected key pair</h2>'
     if stage == "loading":
@@ -61,8 +69,12 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
 
     ranking, profile, clipped, model_label = result
     key, relative, score = ranking[0]
-    score_format = ".3f" if essentia else ".1%"
-    label = "higher match score in pair" if essentia else "higher model score in pair"
+    if engine == KS:
+        score_format, label = ".3f", "higher match score in pair"
+    elif engine == LINEAR_SVM:
+        score_format, label = ".2f", "higher SVM ranking score in pair"
+    else:
+        score_format, label = ".1%", "higher model score in pair"
     rows = "".join(
         f'<tr><th scope="row">{key_name(first)} / {key_name(second)}</th>'
         f'<td class="studio-measure">{value:{score_format}}</td></tr>'
@@ -76,7 +88,7 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
         for pitch, value in zip(PITCH_NAMES, profile, strict=True)
     )
     notices = ""
-    if essentia:
+    if engine == KS:
         notices += '<p class="studio-confidence">Match scores measure correlation with each key profile.</p>'
     if clipped:
         notices += '<p class="studio-confidence">Only the first 120 seconds were analyzed.</p>'
@@ -94,14 +106,14 @@ def render_readout(stage: str, result=None, message: str = "", *, essentia: bool
 
 
 def main() -> None:
-    """Offer both public engines and the research forest when configured."""
+    """Offer the public engines and the research forest when configured."""
     st.set_page_config(page_title="Key Signature Classifier", layout="centered")
     st.html(studio_css())
     st.html(STUDIO_HEADER)
     allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
     model_url = os.environ.get("KEYCLF_MODEL_URL", "")
     model_sha = os.environ.get("KEYCLF_MODEL_SHA256", "")
-    engines = [OPEN_ML, KS]
+    engines = [OPEN_ML, LINEAR_SVM, KS]
     if (allow_local and LOCAL.is_file()) or (model_url and model_sha):
         engines.append(ML)
     with st.container(key="console_workbench"):
@@ -144,9 +156,10 @@ def main() -> None:
                 samples, clipped = decode_clip(content, "recording.wav" if recording else clip.name)
                 if recording:
                     samples = clean_recording(samples, SAMPLE_RATE)
-                if engine == OPEN_ML:
+                if engine in (OPEN_ML, LINEAR_SVM):
                     with threadpool_limits(limits=1):
-                        profile, scores = get_open_model().score_audio(samples)
+                        model = get_open_model() if engine == OPEN_ML else get_linear_svm()
+                        profile, scores = model.score_audio(samples)
                 elif engine == KS:
                     profile, scores = essentia_scores(samples)
                 else:
@@ -163,7 +176,7 @@ def main() -> None:
     if error:
         readout.html(render_readout("error", message=error))
     elif engine in predictions:
-        readout.html(render_readout("result", predictions[engine], essentia=engine == KS))
+        readout.html(render_readout("result", predictions[engine], engine=engine))
     else:
         message = "Select Analyze to find its key." if content else "Upload a track or record a soundbite to find its key."
         readout.html(render_readout("empty", message=message))

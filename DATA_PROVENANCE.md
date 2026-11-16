@@ -129,3 +129,14 @@ The original training and inference code and project contributions to this
 artifact are available under [MIT](LICENSE). Freesound material keeps its
 per-sound CC0 or CC BY terms. The combined web app includes the AGPL
 Essentia dependency described in [NOTICE.md](NOTICE.md).
+
+The [linear SVM](keyclf/linear_svm.json) uses the same 662 CC0/CC BY loops
+and 480 original phrases. Training rotates each pitch summary and its label
+through all 12 tonics. The release is a numerical export of 276 linear
+decision boundaries, with the training scaler folded into the coefficients.
+The JSON contains class names, weights, and intercepts. The development
+estimator and its per-recording support vectors are retained locally.
+GiantSteps and FMAK supplied validation and test clips. See
+[Freesound credits](FREESOUND_CREDITS.tsv) for source attribution.
+The SVM artifact SHA-256 is
+`aff04bfe0e26d414306ed78d685415d9830b42d218d5947f1b1f128cc7301096`.

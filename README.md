@@ -60,8 +60,9 @@ three guesses, and the track's chroma distribution. The classifier selector
 offers the locally trained models.
 
 The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
-recording or MP3/MP4 and ranks three relative-key pairs with the custom
-model or Essentia. C major and A minor, for example, share one result.
+recording or MP3/MP4 and ranks three relative-key pairs. The default custom
+model, Linear SVM, and Essentia are available in the engine selector.
+C major and A minor, for example, share one result.
 The custom model learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
 original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).
@@ -73,6 +74,10 @@ original synthetic phrases. [Open the public app](https://musickeyanalyzer.strea
 
 The pair metric accepts either key in each pair, and three pairs cover six
 keys. Both measurements use the same frozen custom model and held-out clips.
+
+Linear SVM first exact / top three was 38/75 (50.7%) / 59/75 (78.7%) on
+FMAK and 47/91 (51.6%) / 70/91 (76.9%) on GiantSteps. Its scores rank key
+pairs using the highest score within each pair.
 
 See [deployment and local run instructions](DEPLOYMENT.md) and
 [training data provenance](DATA_PROVENANCE.md#training-sources-for-the-open-key-model).

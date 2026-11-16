@@ -7,4 +7,5 @@
 !keyclf/*.py
 !keyclf/*.css
 !keyclf/open_key_model.json
+!keyclf/linear_svm.json
 !streamlit_app.py

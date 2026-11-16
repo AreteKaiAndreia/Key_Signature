@@ -25,7 +25,8 @@ def test_recording_rejects_room_noise_without_music(hum_hz):
         clean_recording(samples.astype(np.float32), SAMPLE_RATE)
 
 
-def test_noisy_microphone_wav_reaches_the_prediction_readout():
+@pytest.mark.parametrize("engine", ["Custom ML (open-trained)", "Linear SVM"])
+def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
     import streamlit as st
     from streamlit.testing.v1 import AppTest
 
@@ -38,6 +39,8 @@ def test_noisy_microphone_wav_reaches_the_prediction_readout():
     sf.write(recording, np.clip(chord + noise, -1, 1), recorder_rate, format="WAV")
     with patch.object(st, "audio_input", return_value=recording) as microphone:
         app = AppTest.from_file(APP, default_timeout=45).run()
+        assert app.selectbox[0].value == "Custom ML (open-trained)"
+        app.selectbox[0].set_value(engine).run()
         app.radio[0].set_value("Record a soundbite").run()
         app.button[0].click().run()
         assert not app.exception

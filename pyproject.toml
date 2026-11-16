@@ -37,7 +37,7 @@ keyclf-train = "keyclf.train:main"
 include = ["keyclf*"]
 
 [tool.setuptools.package-data]
-keyclf = ["*.css", "open_key_model.json"]
+keyclf = ["*.css", "open_key_model.json", "linear_svm.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

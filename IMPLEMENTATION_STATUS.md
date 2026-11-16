@@ -34,6 +34,52 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Linear SVM public option
+
+- The existing custom classifier is the first engine in a new session. Linear
+  SVM uses the same decoding, microphone cleanup, and relative-key result
+  as the other engines. Its displayed numbers are ranking scores.
+- Export command: `.venv/bin/python -m keyclf.train_open_svms --export-linear`.
+  The export matched all 24 key ranks on 604 GiantSteps and 150 FMAK clips
+  and reproduced the held-out counts. Only the numerical coefficients are
+  bundled. See [data provenance](DATA_PROVENANCE.md#training-sources-for-the-open-key-model).
+- Next verification after the source push: run
+  `gh workflow run public-svm-smoke.yml --ref main` against the public
+  deployment. It tests MP3, MP4, and a browser-captured synthetic microphone
+  clip in a fresh signed-out session.
+
+### Linear and RBF SVM comparison
+
+- Fit both kernels to the original Freesound loops and synthetic phrases with
+  12 transpositions per clip. Scale features using the training rows. Tune
+  using mean first exact-key accuracy across both development sets, with
+  mean exact top-three accuracy as the tie-breaker.
+- Keep the current live model as the reference. Freeze the two selected
+  estimators before evaluating the original FMAK and GiantSteps test rows.
+  Use the existing exact-key and relative-pair scorer for all three models.
+- Selection froze both estimators after fitting 3 linear and 9 RBF candidates
+  on 1,142 originals (13,704 augmented rows). The linear kernel chose C=10
+  and the RBF kernel chose C=10 and gamma=0.01. Their mean exact development
+  scores were 60.46%/80.81% and 59.89%/79.46% first/top three.
+- The held-out comparison reproduced the live model's exact and relative
+  counts. The linear SVM clears the 50% first exact and 70% top-three exact
+  thresholds on both sets. The RBF SVM falls one GiantSteps clip short of
+  the first exact threshold. Both SVMs were scored using their decision rank.
+- Local artifacts: `reports/open-key-svm/{selection.json,test.json,linear.joblib,rbf.joblib}`.
+  Reproduce the held-out report from the frozen selections with
+  `.venv/bin/python -m keyclf.train_open_svms --final`.
+- A second scoring run reproduced the JSON byte for byte. Strict pytest
+  passed 155 tests with one optional skip (`reports/open-key-svm/pytest.xml`).
+
+| Held-out clips | Model | Exact first / top three | Pair first / top three |
+|---|---|---:|---:|
+| FMAK (75) | Live custom model | 40 / 56 | 47 / 62 |
+| FMAK (75) | Linear SVM | 38 / 59 | 46 / 64 |
+| FMAK (75) | RBF SVM | 38 / 58 | 45 / 61 |
+| GiantSteps (91) | Live custom model | 47 / 67 | 48 / 74 |
+| GiantSteps (91) | Linear SVM | 47 / 70 | 50 / 76 |
+| GiantSteps (91) | RBF SVM | 45 / 69 | 47 / 74 |
+
 ### Microphone noise handling
 
 - Microphone recordings pass through a noise filter before either prediction

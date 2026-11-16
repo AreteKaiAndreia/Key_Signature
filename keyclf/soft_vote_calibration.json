@@ -1,0 +1,43 @@
+{
+  "format": "open-soft-voting-v1",
+  "classes": [
+    "C major",
+    "C# major",
+    "D major",
+    "D# major",
+    "E major",
+    "F major",
+    "F# major",
+    "G major",
+    "G# major",
+    "A major",
+    "A# major",
+    "B major",
+    "C minor",
+    "C# minor",
+    "D minor",
+    "D# minor",
+    "E minor",
+    "F minor",
+    "F# minor",
+    "G minor",
+    "G# minor",
+    "A minor",
+    "A# minor",
+    "B minor"
+  ],
+  "engines": [
+    "current",
+    "forest",
+    "boosting",
+    "linear",
+    "essentia"
+  ],
+  "temperatures": [
+    0.5638598457119264,
+    0.6028979478861235,
+    1.089757227485173,
+    1.8470214740814004,
+    0.15549865008268082
+  ]
+}

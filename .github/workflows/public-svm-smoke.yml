@@ -1,4 +1,4 @@
-name: Public SVM browser smoke
+name: Public key analyzer browser smoke
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
         run: |
           python -m pip install playwright==1.65.2
           command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
-      - name: Verify live uploads and microphone capture
+      - name: Verify method details, uploads, and live predictions
         run: python tests/verify_public_svm.py
       - name: Save browser screenshots
         uses: actions/upload-artifact@v4

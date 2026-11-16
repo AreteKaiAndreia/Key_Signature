@@ -8,7 +8,9 @@ Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced
 settings. Leave Secrets empty. The app defaults to Neural Network
 (`keyclf/open_key_model.json`). The engine selector also offers Linear SVM,
-Random Forest, Gradient Boosting, and Essentia. Each predicts three relative
+Random Forest, Gradient Boosting, Essentia, and Soft Voting. The selected
+method shows how it works and its held-out accuracy, recall, and precision.
+Each predicts three relative
 key pairs from short previews while the microphone runs. Uploading a file
 or stopping the recorder starts full analysis, up to the first 120 seconds.
 

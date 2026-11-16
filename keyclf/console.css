@@ -164,6 +164,35 @@ button:focus-visible, a:focus-visible, input:focus-visible,
 .studio-bar { width: min(100%, 1.35rem); height: var(--pitch); background: var(--color-cool); border-radius: 2px 2px 0 0; }
 .studio-empty { margin-top: var(--space-sm); max-width: 46ch; color: var(--color-muted); line-height: 1.5; }
 .studio-wait { height: 3rem; width: 55%; background: var(--color-paper-3); margin-block: var(--space-lg); border-radius: var(--radius-control); }
+.studio-method {
+  border-top: 1px solid var(--color-rule);
+  padding-block: var(--space-md);
+}
+.studio-method-copy {
+  max-width: 70ch;
+  color: var(--color-ink-2);
+  line-height: 1.55;
+  margin-block: var(--space-sm) var(--space-md);
+}
+.studio-method-copy p { margin: 0; }
+.studio-method-copy p + p { margin-top: var(--space-xs); }
+.studio-benchmark {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin: 0;
+  padding-block: var(--space-xs);
+  border-block: 1px solid var(--color-rule);
+}
+.studio-benchmark dt { color: var(--color-muted); font-size: var(--text-sm); }
+.studio-benchmark dd { color: var(--color-ink); font-size: var(--text-lg); margin: 0; }
+.studio-benchmark-note {
+  max-width: 70ch;
+  margin: var(--space-xs) 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
 .studio-footer {
   display: flex;
   flex-wrap: wrap;

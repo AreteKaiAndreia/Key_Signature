@@ -1,5 +1,6 @@
 """Verify the hosted upload and recorder paths from an isolated CI browser."""
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -8,6 +9,15 @@ from tempfile import TemporaryDirectory
 from playwright.sync_api import expect, sync_playwright
 
 APP = "https://musickeyanalyzer.streamlit.app/"
+METHODS = {
+    "Neural Network": "neural_network",
+    "Linear SVM": "linear_svm",
+    "Random Forest": "random_forest",
+    "Gradient Boosting": "gradient_boosting",
+    "Essentia (Krumhansl–Schmuckler)": "essentia",
+    "Soft Voting": "soft_voting",
+}
+BENCHMARK = json.loads(Path("keyclf/method_benchmarks.json").read_text())
 
 
 def ffmpeg(*args: str) -> None:
@@ -29,6 +39,15 @@ def select_engine(frame, label: str) -> None:
     frame.get_by_role("button", name="Open", exact=True).click()
     frame.get_by_role("option", name=label, exact=True).click()
     expect(frame.get_by_role("combobox", name="Prediction engine")).to_have_value(label)
+
+
+def verify_method_details(frame, label: str) -> None:
+    explanation = frame.get_by_role("region", name=f"How {label} works")
+    expect(explanation.locator(".studio-method-copy p")).to_have_count(2)
+    metrics = BENCHMARK["methods"][METHODS[label]]
+    expected = [metrics["correct"] / BENCHMARK["clips"], metrics["recall"], metrics["precision"]]
+    expect(explanation.locator("dt")).to_have_text(["Accuracy", "Recall", "Precision"])
+    expect(explanation.locator("dd")).to_have_text([f"{value:.1%}" for value in expected])
 
 
 def main() -> None:
@@ -54,13 +73,15 @@ def main() -> None:
             engine = frame.get_by_role("combobox", name="Prediction engine")
             expect(engine).to_have_value("Neural Network", timeout=60_000)
             print("Signed-out visitor starts with Neural Network.", flush=True)
-            select_engine(frame, "Linear SVM")
             expect(frame.get_by_role("button", name="Analyze", exact=True)).to_have_count(0)
             for clip in (mp3, mp4):
                 frame.locator('input[type="file"]').set_input_files(clip)
-                verify_result(frame, "Linear SVM")
+                for label in METHODS if clip == mp3 else ("Linear SVM", "Soft Voting"):
+                    select_engine(frame, label)
+                    verify_method_details(frame, label)
+                    verify_result(frame, label, known_pair=label in ("Linear SVM", "Soft Voting"))
+                    print(f"{clip.name}, {label}: explanation, metrics, and three key pairs.", flush=True)
                 page.screenshot(path=evidence / f"upload-{clip.suffix[1:]}.png")
-                print(f"{clip.name}: C major / A minor plus two alternatives.", flush=True)
                 frame.get_by_role("button", name=f"Remove {clip.name}").click()
                 expect(frame.locator(".studio-reading")).to_have_count(0)
 
@@ -75,10 +96,10 @@ def main() -> None:
                 )
             stop = recorder.get_by_role("button", name="Stop recording", exact=True)
             print("Live histogram: C, E, and G bars populated while recording.", flush=True)
-            for label in ("Linear SVM", "Neural Network", "Random Forest", "Gradient Boosting", "Essentia (Krumhansl–Schmuckler)"):
-                if label != "Linear SVM":
-                    select_engine(frame, label)
-                verify_result(frame, label, live=True, known_pair=label in ("Linear SVM", "Neural Network"))
+            for label in METHODS:
+                select_engine(frame, label)
+                verify_method_details(frame, label)
+                verify_result(frame, label, live=True, known_pair=label in ("Linear SVM", "Neural Network", "Soft Voting"))
                 expect(stop).to_be_enabled()
                 expect(chart).to_be_visible()
                 print(f"{label}: three live pairs while the same recorder is running.", flush=True)
@@ -86,7 +107,7 @@ def main() -> None:
                     page.screenshot(path=evidence / "recording-live-chroma.png")
 
             stop.click()
-            verify_result(frame, "Essentia (Krumhansl–Schmuckler)")
+            verify_result(frame, "Soft Voting")
             page.screenshot(path=evidence / "microphone.png")
             print("Stopped recording: final C major / A minor without clicking Analyze.", flush=True)
             recorder.get_by_role("button", name="Clear recording", exact=True).click()

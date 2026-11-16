@@ -1,0 +1,39 @@
+{
+  "clips": 166,
+  "datasets": {
+    "FMAK": 75,
+    "GiantSteps": 91
+  },
+  "methods": {
+    "neural_network": {
+      "correct": 87,
+      "recall": 0.475446429,
+      "precision": 0.561643693
+    },
+    "linear_svm": {
+      "correct": 85,
+      "recall": 0.474289021,
+      "precision": 0.483132779
+    },
+    "random_forest": {
+      "correct": 76,
+      "recall": 0.410929233,
+      "precision": 0.484024772
+    },
+    "gradient_boosting": {
+      "correct": 78,
+      "recall": 0.432093254,
+      "precision": 0.452156578
+    },
+    "essentia": {
+      "correct": 76,
+      "recall": 0.473660714,
+      "precision": 0.479927249
+    },
+    "soft_voting": {
+      "correct": 88,
+      "recall": 0.486243386,
+      "precision": 0.519678238
+    }
+  }
+}

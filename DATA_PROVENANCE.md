@@ -149,3 +149,14 @@ recordings, and benchmark data stay local. Source credits are in
 [FREESOUND_CREDITS.tsv](FREESOUND_CREDITS.tsv).
 The tree artifact SHA-256 is
 `547a46029c38368425f574e87d23ec324406c18699b4570c8e89464ee0378ca5`.
+
+[Soft Voting](keyclf/open_ensemble.py) averages the five public engines
+after adjusting each one's scores. The public
+[calibration file](keyclf/soft_vote_calibration.json) contains five scalar
+temperatures fitted on 91 GiantSteps and 75 FMAK validation clips. It
+contains no per-clip data. The [benchmark summary](keyclf/method_benchmarks.json)
+reports aggregate exact first-guess accuracy, macro recall, and macro
+precision on the separate 91 GiantSteps and 75 FMAK test clips. Precision
+assigns zero to a key the method never predicted. To regenerate the
+summary from the local benchmark reports, run
+`python scripts/export_method_benchmarks.py`.

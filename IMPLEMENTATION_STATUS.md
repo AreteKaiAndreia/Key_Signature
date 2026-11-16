@@ -34,6 +34,59 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Six methods in the public analyzer — 2026-11-16
+
+- Added Soft Voting to the method selector, including automatic uploads
+  and live recording. Each method shows two paragraphs and exact first-guess
+  accuracy, macro recall, and macro precision on the same 166 test clips.
+- Local Chromium verified all six methods on an MP3, Soft Voting on an MP4,
+  and the method panel at 390 pixels. App and audio regression checks passed
+  17 tests. The published calibration contains five scalar parameters.
+- Next check: run the public browser workflow once GitHub `main` deploys.
+
+### Soft-voting ensemble and labeled training plots — 2026-11-16
+
+- The ensemble gives the Neural Network, Random Forest, Gradient Boosting,
+  Linear SVM, and Essentia an equal vote after one temperature per engine.
+  Fit temperature parameters on 91 GiantSteps and 75 FMAK validation rows
+  with equal total weight per dataset. No test ID entered calibration.
+- The original 166 test clips yielded 88 exact first guesses (53.0%), 126
+  exact top-three hits (75.9%), 99 relative-pair first hits (59.6%), and 138
+  relative-pair top-three hits (83.1%). FMAK exact counts were 41 and 57
+  of 75. GiantSteps exact counts were 47 and 69 of 91.
+- Verified original engine receipts, probability normalization and equal
+  weights, end-to-end inference with the generated C-major MP3, and model,
+  true-key, and point selection at 736 and 320 pixels in Chromium.
+- Local calibration and results live under `reports/model-diagnostics/`
+  in `soft-vote-calibration.json`, `ensemble-comparison.csv`,
+  `ensemble-per-key.csv`, and `training-key-labels.csv`. The interactive
+  plot uses the original PCA axes and all 13,704 training rows.
+- Regenerate the ensemble results from validated Essentia checkpoints:
+  `MPLCONFIGDIR=/tmp/keyclf-diagnostics-matplotlib LOKY_MAX_CPU_COUNT=2 PYTHONPATH=. .venv/bin/python reports/model-diagnostics/compare_ensemble.py`.
+  To refresh validation Essentia checkpoints, use:
+  `PYTHONPATH=. .venv/bin/python reports/model-diagnostics/score_essentia.py --split val`.
+
+### Held-out engine comparison — 2026-11-16
+
+- Compared the five public engines from commit `8fa54f8` plus the offline
+  RBF SVM. All used the original 91 GiantSteps and 75 FMAK test IDs. The
+  learned engines reproduced their frozen receipts. Essentia 2.1b6.dev1389
+  replayed 166 checksum-verified clips with the deployed pitch extractor.
+  Re-running extraction reused all 166 checkpoints. No audio was retained.
+- Combined exact first/top-three results (166 clips): Neural Network 87/123,
+  Random Forest 76/116, Gradient Boosting 78/117, Linear SVM 85/129,
+  Essentia 76/122, and offline RBF SVM 83/127. The first and second counts
+  use the same denominator of 166.
+- Shared training PCA used all 13,704 augmented rows from 662 Freesound loops
+  and 480 synthetic clips. Exact first-guess training accuracy was 93.2%
+  for Random Forest, 96.9% for Gradient Boosting, and 72.2% for Linear SVM.
+- Local artifacts: `reports/model-diagnostics/training-x1-x2.png`,
+  `reports/model-diagnostics/test-summary.csv`, and
+  `reports/model-diagnostics/per-key-errors.csv`.
+- No outstanding benchmark steps. To regenerate the reports from the
+  verified score checkpoints, run this command from the repository root:
+  `MPLCONFIGDIR=/tmp/keyclf-diagnostics-matplotlib LOKY_MAX_CPU_COUNT=2 PYTHONPATH=. .venv/bin/python reports/model-diagnostics/compare_engines.py`.
+
 ### Live key pairs and automatic analysis
 
 - Implement live predictions for the selected engine using bounded preview

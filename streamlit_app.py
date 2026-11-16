@@ -15,8 +15,12 @@ import streamlit as st
 from keyclf.cloud_audio import SAMPLE_RATE, decode_clip
 from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
 from keyclf.keys import PITCH_NAMES, key_name
+from keyclf.method_details import (
+    BOOSTING, FOREST, KS, LINEAR_SVM, METHODS, OPEN_ML, SOFT_VOTE, render_method_details,
+)
 from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
 from keyclf.open_candidate import CandidateKeyModel
+from keyclf.open_ensemble import SoftVotingKeyModel
 from keyclf.open_linear_svm import LinearKeySVM
 from keyclf.open_tree_models import load_tree_models, tree_scores
 from keyclf.relative_pairs import rank_relative_pairs
@@ -25,12 +29,7 @@ from keyclf.streaming_recorder import Recording, record_soundbite
 from threadpoolctl import threadpool_limits
 
 ML = "Research ML (random forest)"
-OPEN_ML = "Neural Network"
-LINEAR_SVM = "Linear SVM"
-FOREST = "Random Forest"
-BOOSTING = "Gradient Boosting"
 TREE_ENGINES = {FOREST: "forest", BOOSTING: "boosting"}
-KS = "Essentia (Krumhansl–Schmuckler)"
 LOCAL = Path(__file__).resolve().parent / "models" / "cloud_model.joblib"
 OPEN_ARTIFACT = Path(__file__).resolve().parent / "keyclf" / "open_key_model.json"
 SOURCE = "https://github.com/AreteKaiAndreia/Key_Signature"
@@ -69,6 +68,12 @@ def get_tree_models() -> dict:
     return load_tree_models()
 
 
+@st.cache_resource(show_spinner=False)
+def get_ensemble() -> SoftVotingKeyModel:
+    """Load the voting calibration shipped with the public engines."""
+    return SoftVotingKeyModel.load(OPEN_ARTIFACT.with_name("soft_vote_calibration.json"))
+
+
 def score_clip(content, filename, engine, recording, research_config):
     """Apply the selected engine to either a preview or a complete clip."""
     try:
@@ -84,6 +89,13 @@ def score_clip(content, filename, engine, recording, research_config):
                 profile, scores = tree_scores(get_tree_models()[TREE_ENGINES[engine]], samples)
             elif engine == KS:
                 profile, scores = essentia_scores(samples)
+            elif engine == SOFT_VOTE:
+                trees = get_tree_models()
+                scorers = {
+                    "current": get_open_model().scores, "linear": get_linear_svm().scores,
+                    "forest": trees["forest"].predict_proba, "boosting": trees["boosting"].predict_proba,
+                }
+                profile, scores = get_ensemble().score_audio(samples, feature_scorers=scorers)
             else:
                 allow_local, model_url, model_sha = research_config
                 revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
@@ -160,7 +172,7 @@ def main() -> None:
     allow_local = os.environ.get("KEYCLF_LOCAL_MODEL") == "1"
     model_url = os.environ.get("KEYCLF_MODEL_URL", "")
     model_sha = os.environ.get("KEYCLF_MODEL_SHA256", "")
-    engines = [OPEN_ML, LINEAR_SVM, FOREST, BOOSTING, KS]
+    engines = list(METHODS)
     if (allow_local and LOCAL.is_file()) or (model_url and model_sha):
         engines.append(ML)
     with st.container(key="console_workbench"):
@@ -183,6 +195,8 @@ def main() -> None:
                     st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
             engine = st.selectbox("Prediction engine", engines)
         readout = output.empty()
+    if engine in METHODS:
+        st.html(render_method_details(engine))
     predictions = st.session_state.setdefault("automatic_key_predictions", {})
     identity = (source, hashlib.sha256(content).hexdigest()) if content else None
     if st.session_state.get("clip_id") != identity:
@@ -215,7 +229,7 @@ def main() -> None:
         result, error = predictions[engine]
         readout.html(render_readout("error" if error else "result", result, message=error, engine=engine))
     else:
-        readout.html(render_readout("empty", message="Upload a track or record a soundbite to find its key."))
+        readout.html(render_readout("empty", message="Upload a track or record a soundbite to find its key.", engine=engine))
     st.html(f"""<footer class="studio-footer">
       <a href="{SOURCE}/blob/main/DEPLOYMENT.md">Corresponding source and build instructions</a>
       <a href="https://essentia.upf.edu/licensing_information.html">Essentia license</a>

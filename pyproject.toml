@@ -37,7 +37,10 @@ keyclf-train = "keyclf.train:main"
 include = ["keyclf*"]
 
 [tool.setuptools.package-data]
-keyclf = ["*.css", "live_microphone.js", "open_key_model.json", "linear_svm.json", "open_tree_models.joblib"]
+keyclf = [
+    "*.css", "live_microphone.js", "open_key_model.json", "linear_svm.json",
+    "open_tree_models.joblib", "soft_vote_calibration.json", "method_benchmarks.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

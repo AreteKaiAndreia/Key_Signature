@@ -42,7 +42,10 @@ This is the durable resume ledger for the key-signature classifier.
 - Local Chromium verified all six methods on an MP3, Soft Voting on an MP4,
   and the method panel at 390 pixels. App and audio regression checks passed
   17 tests. The published calibration contains five scalar parameters.
-- Next check: run the public browser workflow once GitHub `main` deploys.
+- Deployed from `5e37a0e`. The [signed-out browser run](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43970613892)
+  verified the two paragraphs, benchmark values, MP3 analysis, and live
+  microphone predictions for all six methods. Linear SVM and Soft Voting
+  also passed MP4 analysis, and Soft Voting analyzed the finished recording.
 
 ### Soft-voting ensemble and labeled training plots — 2026-11-16
 

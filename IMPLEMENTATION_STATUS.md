@@ -38,8 +38,12 @@ This is the durable resume ledger for the key-signature classifier.
 
 - The microphone recorder updates a 12-bin chroma preview in the browser
   every 100 ms during capture. The chart accumulates detected pitch energy.
-  Streamlit receives the completed clip when recording stops, and Analyze
+  Streamlit receives a mono WAV when recording stops, and Analyze
   runs the existing noise cleanup and prediction path.
+- The first hosted check confirmed live C, E and G bars and both file
+  uploads. Its recording analysis encountered a cached decoder that did
+  not support the recorder's compressed format. The browser now sends
+  WAV, the existing server recording format.
 - Next verification after deploy:
   `gh workflow run public-svm-smoke.yml --ref main`. The browser check
   feeds a synthetic chord into a virtual microphone and requires C, E, and

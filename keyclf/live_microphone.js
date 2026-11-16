@@ -34,6 +34,36 @@ function encodeBlob(blob) {
   });
 }
 
+async function recordingWav(blob, sampleRate, maxSeconds) {
+  const decoder = new OfflineAudioContext(1, 1, sampleRate);
+  const audio = await decoder.decodeAudioData(await blob.arrayBuffer());
+  const frames = Math.min(audio.length, maxSeconds * sampleRate);
+  const bytes = new DataView(new ArrayBuffer(44 + 2 * frames));
+  const writeText = (offset, text) => {
+    for (let i = 0; i < text.length; i += 1) bytes.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeText(0, "RIFF");
+  bytes.setUint32(4, 36 + 2 * frames, true);
+  writeText(8, "WAVEfmt ");
+  bytes.setUint32(16, 16, true);
+  bytes.setUint16(20, 1, true);  // PCM
+  bytes.setUint16(22, 1, true);  // mono
+  bytes.setUint32(24, sampleRate, true);
+  bytes.setUint32(28, 2 * sampleRate, true);
+  bytes.setUint16(32, 2, true);
+  bytes.setUint16(34, 16, true);
+  writeText(36, "data");
+  bytes.setUint32(40, 2 * frames, true);
+  const channels = Array.from({length: audio.numberOfChannels}, (_, index) => audio.getChannelData(index));
+  for (let i = 0; i < frames; i += 1) {
+    let sample = 0;
+    for (const channel of channels) sample += channel[i];
+    sample = Math.max(-1, Math.min(1, sample / channels.length));
+    bytes.setInt16(44 + 2 * i, Math.round(sample * 32767), true);
+  }
+  return new Blob([bytes], {type: "audio/wav"});
+}
+
 export default function ({parentElement, data, setStateValue}) {
   const record = parentElement.querySelector("[data-record]");
   const clear = parentElement.querySelector("[data-clear]");
@@ -94,7 +124,8 @@ export default function ({parentElement, data, setStateValue}) {
     showMessage("");
     try {
       const mimeType = typeof MediaRecorder !== "undefined" && audioTypes.find(type => MediaRecorder.isTypeSupported(type));
-      if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === "undefined" || !mimeType) {
+      if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === "undefined" ||
+          typeof OfflineAudioContext === "undefined" || !mimeType) {
         showMessage("Microphone recording is unavailable here. Upload an MP3 or MP4 instead.");
         return;
       }
@@ -130,12 +161,13 @@ export default function ({parentElement, data, setStateValue}) {
           if (disposed || failed) return;
           const blob = new Blob(chunks, {type: recorder.mimeType});
           if (!blob.size || blob.size > data.maxBytes) throw new Error("Invalid recording size");
-          const audio = await encodeBlob(blob);
+          const wav = await recordingWav(blob, data.sampleRate, data.maxSeconds);
+          const audio = await encodeBlob(wav);
           if (disposed) return;
-          playbackURL = URL.createObjectURL(blob);
+          playbackURL = URL.createObjectURL(wav);
           playback.src = playbackURL;
           playback.hidden = clear.hidden = false;
-          setStateValue("clip", {mime: blob.type.split(";")[0], audio});
+          setStateValue("clip", audio);
         } catch {
           if (!disposed) showMessage("The recording could not be read. Try a shorter soundbite.");
         } finally {

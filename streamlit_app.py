@@ -15,7 +15,7 @@ import streamlit as st
 from keyclf.cloud_audio import SAMPLE_RATE, decode_clip
 from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
 from keyclf.keys import PITCH_NAMES, key_name
-from keyclf.live_microphone import record_soundbite
+from keyclf.live_recorder import record_soundbite
 from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
 from keyclf.open_candidate import CandidateKeyModel
 from keyclf.open_linear_svm import LinearKeySVM
@@ -126,7 +126,7 @@ def main() -> None:
                                   horizontal=True, label_visibility="collapsed")
                 recording = source == "Record a soundbite"
                 if recording:
-                    content, filename = record_soundbite()
+                    content, filename = record_soundbite(), "recording.wav"
                     st.caption("Record 5–15 seconds close to the music. Include a few notes or chords.")
                 else:
                     clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")

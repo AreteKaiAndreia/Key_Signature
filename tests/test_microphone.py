@@ -36,7 +36,7 @@ def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
     chord *= (time >= 0.7) & (time < 4.3)
     recording = BytesIO()
     sf.write(recording, np.clip(chord + noise, -1, 1), recorder_rate, format="WAV")
-    with patch("keyclf.live_microphone.record_soundbite", return_value=(recording.getvalue(), "recording.wav")) as microphone:
+    with patch("keyclf.live_recorder.record_soundbite", return_value=recording.getvalue()) as microphone:
         app = AppTest.from_file(APP, default_timeout=45).run()
         assert app.selectbox[0].value == "Custom ML (open-trained)"
         app.selectbox[0].set_value(engine).run()
@@ -47,7 +47,7 @@ def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
 
         noise_only = BytesIO()
         sf.write(noise_only, noise, recorder_rate, format="WAV")
-        microphone.return_value = (noise_only.getvalue(), "recording.wav")
+        microphone.return_value = noise_only.getvalue()
         app.run()
         app.button[0].click().run()
         assert not app.exception

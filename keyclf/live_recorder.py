@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 import base64
-import binascii
 from functools import lru_cache
 from pathlib import Path
 
 import streamlit as st
 
-from .cloud_audio import MAX_BYTES, MAX_SECONDS
+from .cloud_audio import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
 from .keys import PITCH_NAMES
 
-RECORDING_NAMES = {"audio/webm": "recording.webm", "audio/mp4": "recording.mp4",
-                   "audio/ogg": "recording.ogg"}
 PITCH_BARS = "".join(
     f'<div class="studio-pitch" data-pitch="{pitch}" aria-label="{pitch}: 0.0%">'
     f'<div class="studio-track" aria-hidden="true"><div class="studio-bar" style="--pitch: 0%"></div></div>'
@@ -43,25 +40,23 @@ def recorder_component(script: str):
     return st.components.v2.component("live_microphone", html=RECORDER_HTML, js=script, isolate_styles=False)
 
 
-def record_soundbite() -> tuple[bytes, str]:
+def record_soundbite() -> bytes:
     """Read a completed recording after its browser preview ends."""
-    script = Path(__file__).with_suffix(".js").read_text(encoding="utf-8")
+    script = Path(__file__).with_name("live_microphone.js").read_text(encoding="utf-8")
     state = recorder_component(script)(
-        key="microphone_recording", data={"maxSeconds": MAX_SECONDS, "maxBytes": MAX_BYTES},
+        key="microphone_wav", data={"maxSeconds": MAX_SECONDS, "maxBytes": MAX_BYTES, "sampleRate": SAMPLE_RATE},
         default={"clip": None}, on_clip_change=lambda: None,
     )
-    clip = state.clip
-    if clip is None:
-        return b"", ""
+    encoded = state.clip
+    if encoded is None:
+        return b""
     try:
-        filename = RECORDING_NAMES[clip["mime"]]
-        encoded = clip["audio"]
         if not isinstance(encoded, str) or len(encoded) > 4 * ((MAX_BYTES + 2) // 3):
             raise ValueError("Invalid recording size.")
         content = base64.b64decode(encoded, validate=True)
         if 0 < len(content) <= MAX_BYTES:
-            return content, filename
-    except (KeyError, TypeError, ValueError, binascii.Error):
+            return content
+    except ValueError:
         pass
     st.error("The recording could not be read. Try recording a shorter soundbite.")
-    return b"", ""
+    return b""

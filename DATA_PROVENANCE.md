@@ -140,3 +140,12 @@ GiantSteps and FMAK supplied validation and test clips. See
 [Freesound credits](FREESOUND_CREDITS.tsv) for source attribution.
 The SVM artifact SHA-256 is
 `aff04bfe0e26d414306ed78d685415d9830b42d218d5947f1b1f128cc7301096`.
+
+The [bundled tree models](keyclf/open_tree_models.joblib) are a Random Forest
+and a histogram gradient boosting classifier fitted to the same transposed
+Freesound and synthetic features. The serialized estimators store fitted
+tree splits, leaf statistics, and the canonical classes. Training features,
+recordings, and benchmark data stay local. Source credits are in
+[FREESOUND_CREDITS.tsv](FREESOUND_CREDITS.tsv).
+The tree artifact SHA-256 is
+`547a46029c38368425f574e87d23ec324406c18699b4570c8e89464ee0378ca5`.

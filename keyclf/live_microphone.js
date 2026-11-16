@@ -64,7 +64,7 @@ async function recordingWav(blob, sampleRate, maxSeconds) {
   return new Blob([bytes], {type: "audio/wav"});
 }
 
-export default function ({parentElement, data, setStateValue}) {
+export default function ({parentElement, data, setStateValue, setTriggerValue}) {
   const record = parentElement.querySelector("[data-record]");
   const clear = parentElement.querySelector("[data-clear]");
   const elapsed = parentElement.querySelector("[data-elapsed]");
@@ -75,6 +75,7 @@ export default function ({parentElement, data, setStateValue}) {
   const bars = pitches.map(pitch => pitch.querySelector(".studio-bar"));
   const energy = new Float64Array(pitches.length);
   let stream, context, recorder, refresh, timeout, playbackURL;
+  let segment, segmentTimer, takeId, sequence, pending, sentAt;
   let disposed = false;
 
   function showMessage(text) {
@@ -96,6 +97,11 @@ export default function ({parentElement, data, setStateValue}) {
   function releaseCapture() {
     clearInterval(refresh);
     clearTimeout(timeout);
+    clearTimeout(segmentTimer);
+    if (segment?.state === "recording") {
+      segment.onstop = null;
+      segment.stop();
+    }
     stream?.getTracks().forEach(track => track.stop());
     if (context && context.state !== "closed") context.close().catch(() => {});
     stream = context = null;
@@ -109,7 +115,40 @@ export default function ({parentElement, data, setStateValue}) {
     URL.revokeObjectURL(playbackURL);
     playbackURL = null;
     playback.hidden = clear.hidden = true;
-    setStateValue("clip", null);
+  }
+
+  function nextPreview(id, mimeType) {
+    if (disposed || takeId !== id || recorder?.state !== "recording") return;
+    try {
+      const preview = new MediaRecorder(stream, {mimeType, audioBitsPerSecond: 64000});
+      segment = preview;
+      const chunks = [];
+      preview.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      preview.onstop = async () => {
+        if (disposed || takeId !== id || recorder?.state !== "recording") return;
+        nextPreview(id, mimeType);
+        const acknowledged = document.querySelector("[data-preview-ack]")?.dataset.previewAck;
+        // Keep one server request in flight even when the first model call is slow.
+        if (pending && acknowledged !== pending && performance.now() - sentAt < 30000) return;
+        pending = id + "/" + (++sequence);
+        sentAt = performance.now();
+        try {
+          const blob = new Blob(chunks, {type: preview.mimeType});
+          const audio = await encodeBlob(await recordingWav(blob, data.sampleRate, data.previewSeconds));
+          if (!disposed && takeId === id && recorder?.state === "recording") {
+            setTriggerValue("preview", {id, token: pending, audio});
+          }
+        } catch {
+          pending = null;
+        }
+      };
+      preview.start();
+      segmentTimer = setTimeout(() => {
+        if (preview.state === "recording") preview.stop();
+      }, data.previewSeconds * 1000);
+    } catch {
+      showMessage("Live predictions are unavailable on this browser. The finished recording will still be analyzed.");
+    }
   }
 
   function stop() {
@@ -146,6 +185,10 @@ export default function ({parentElement, data, setStateValue}) {
       const binWidth = context.sampleRate / analyser.fftSize;
       const chunks = [];
       let failed = false;
+      const id = crypto.randomUUID();
+      takeId = id;
+      sequence = 0;
+      pending = null;
       recorder = new MediaRecorder(stream, {mimeType, audioBitsPerSecond: 128000});
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
@@ -158,7 +201,11 @@ export default function ({parentElement, data, setStateValue}) {
         chart.hidden = true;
         record.textContent = "Record";
         try {
-          if (disposed || failed) return;
+          if (disposed) return;
+          if (failed) {
+            setStateValue("take", {id, active: false});
+            return;
+          }
           const blob = new Blob(chunks, {type: recorder.mimeType});
           if (!blob.size || blob.size > data.maxBytes) throw new Error("Invalid recording size");
           const wav = await recordingWav(blob, data.sampleRate, data.maxSeconds);
@@ -167,15 +214,20 @@ export default function ({parentElement, data, setStateValue}) {
           playbackURL = URL.createObjectURL(wav);
           playback.src = playbackURL;
           playback.hidden = clear.hidden = false;
-          setStateValue("clip", audio);
+          setStateValue("take", {id, active: false, audio});
         } catch {
-          if (!disposed) showMessage("The recording could not be read. Try a shorter soundbite.");
+          if (!disposed) {
+            setStateValue("take", {id, active: false});
+            showMessage("The recording could not be read. Try a shorter soundbite.");
+          }
         } finally {
           record.disabled = clear.disabled = false;
         }
       };
       recorder.start();
       removePlayback();
+      setStateValue("take", {id, active: true});
+      nextPreview(id, mimeType);
       energy.fill(0);
       drawBars();
       chart.hidden = false;
@@ -203,6 +255,7 @@ export default function ({parentElement, data, setStateValue}) {
   record.onclick = () => recorder?.state === "recording" ? stop() : start();
   clear.onclick = () => {
     removePlayback();
+    setStateValue("take", null);
     elapsed.textContent = "00:00";
     showMessage("");
   };

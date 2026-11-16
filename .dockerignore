@@ -9,4 +9,5 @@
 !keyclf/live_microphone.js
 !keyclf/open_key_model.json
 !keyclf/linear_svm.json
+!keyclf/open_tree_models.joblib
 !streamlit_app.py

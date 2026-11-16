@@ -59,13 +59,13 @@ Upload an MP3, MP4, or WAV to see the detected key, model confidence, the top
 three guesses, and the track's chroma distribution. The classifier selector
 offers the locally trained models.
 
-The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
-recording or MP3/MP4 and ranks three relative-key pairs. The default custom
-model, Linear SVM, and Essentia are available in the engine selector.
-C major and A minor, for example, share one result.
-The browser updates a live chroma histogram during microphone capture.
-Select Analyze after stopping to get the engine's final prediction.
-The custom model learns from overall chroma, harmonic chroma, and bass
+The Community Cloud entry point, `streamlit_app.py`, analyzes microphone
+recordings and MP3/MP4 uploads automatically. During recording, the browser
+updates the chroma chart and the selected engine ranks three relative-key
+pairs from short audio samples. C major and A minor share one result.
+The selector offers Neural Network (default), Linear SVM, Random Forest,
+Gradient Boosting, and Essentia.
+The neural network learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
 original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).
 
@@ -75,7 +75,7 @@ original synthetic phrases. [Open the public app](https://musickeyanalyzer.strea
 | FMAK | 40/75 (53.3%) | 56/75 (74.7%) | 47/75 (62.7%) | 62/75 (82.7%) |
 
 The pair metric accepts either key in each pair, and three pairs cover six
-keys. Both measurements use the same frozen custom model and held-out clips.
+keys. The table shows the frozen neural network on the held-out clips.
 
 Linear SVM first exact / top three was 38/75 (50.7%) / 59/75 (78.7%) on
 FMAK and 47/91 (51.6%) / 70/91 (76.9%) on GiantSteps. Its scores rank key

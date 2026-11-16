@@ -34,6 +34,25 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Live key pairs and automatic analysis
+
+- Implement live predictions for the selected engine using bounded preview
+  clips and the existing microphone noise cleanup. Analyze uploaded and
+  completed recordings automatically.
+- Keep the default network, label it Neural Network, and add genuine Random
+  Forest and Gradient Boosting options. Fit both on the open training corpus,
+  select on development clips, then score the frozen benchmark tests.
+- `.venv/bin/python -m keyclf.train_open_trees` evaluated two settings per
+  family and selected a 120-tree forest of depth 18 and a 60-round boosting
+  classifier with 15 leaves per tree. The confirmed held-out first/top-three
+  exact counts were 40/61 on GiantSteps and 36/55 on FMAK for the forest,
+  and 40/60 on GiantSteps and 38/57 on FMAK for boosting. Denominators are
+  91 and 75. Full counts are in `reports/open-key-trees/test.json`.
+- Next deployment verification:
+  `gh workflow run public-svm-smoke.yml --ref main`. The hosted browser
+  switches through the five public engines during a single microphone take
+  and checks automatic results for MP3, MP4, and the finished recording.
+
 ### Live microphone histogram
 
 - The microphone recorder updates a 12-bin chroma preview in the browser

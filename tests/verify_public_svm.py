@@ -14,11 +14,21 @@ def ffmpeg(*args: str) -> None:
     subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", *args], check=True)
 
 
-def verify_result(frame) -> None:
-    result = frame.get_by_role("region", name="Detected key pair")
-    expect(result.get_by_text("higher SVM ranking score in pair", exact=False)).to_be_visible(timeout=45_000)
-    expect(result.locator(".studio-reading")).to_have_text(re.compile(r"C major.*A minor|A minor.*C major"))
+def verify_result(frame, engine: str, *, live: bool = False, known_pair: bool = True) -> None:
+    title = "Live key prediction" if live else "Detected key pair"
+    result = frame.get_by_role("region", name=title)
+    expect(result).to_have_attribute("data-engine", engine, timeout=45_000)
+    pair = result.locator(".studio-reading")
+    expect(pair).to_be_visible(timeout=45_000)
+    if known_pair:
+        expect(pair).to_have_text(re.compile(r"C major.*A minor|A minor.*C major"))
     expect(result.locator(".studio-alternates tbody tr")).to_have_count(2)
+
+
+def select_engine(frame, label: str) -> None:
+    frame.get_by_role("button", name="Open", exact=True).click()
+    frame.get_by_role("option", name=label, exact=True).click()
+    expect(frame.get_by_role("combobox", name="Prediction engine")).to_have_value(label)
 
 
 def main() -> None:
@@ -42,22 +52,17 @@ def main() -> None:
             page.goto(APP, wait_until="domcontentloaded", timeout=60_000)
             frame = page.frame_locator('iframe[title="streamlitApp"]')
             engine = frame.get_by_role("combobox", name="Prediction engine")
-            expect(engine).to_have_value("Custom ML (open-trained)", timeout=60_000)
-            print("Signed-out visitor starts with Custom ML.", flush=True)
-            frame.get_by_role("button", name="Open", exact=True).click()
-            frame.get_by_role("option", name="Linear SVM", exact=True).click()
-            expect(engine).to_have_value("Linear SVM")
-
-            analyze = frame.get_by_role("button", name="Analyze", exact=True)
+            expect(engine).to_have_value("Neural Network", timeout=60_000)
+            print("Signed-out visitor starts with Neural Network.", flush=True)
+            select_engine(frame, "Linear SVM")
+            expect(frame.get_by_role("button", name="Analyze", exact=True)).to_have_count(0)
             for clip in (mp3, mp4):
                 frame.locator('input[type="file"]').set_input_files(clip)
-                expect(analyze).to_be_enabled(timeout=15_000)
-                analyze.click()
-                verify_result(frame)
+                verify_result(frame, "Linear SVM")
                 page.screenshot(path=evidence / f"upload-{clip.suffix[1:]}.png")
                 print(f"{clip.name}: C major / A minor plus two alternatives.", flush=True)
                 frame.get_by_role("button", name=f"Remove {clip.name}").click()
-                expect(analyze).to_be_disabled()
+                expect(frame.locator(".studio-reading")).to_have_count(0)
 
             frame.get_by_text("Record a soundbite", exact=True).click()
             recorder = frame.get_by_role("region", name="Microphone recorder")
@@ -68,19 +73,24 @@ def main() -> None:
                 expect(chart.locator(f'[data-pitch="{pitch}"]')).to_have_attribute(
                     "aria-label", re.compile(rf"^{pitch}: [1-9]\d\.\d%$"), timeout=5_000,
                 )
-            expect(recorder.get_by_role("button", name="Stop recording", exact=True)).to_be_enabled()
-            expect(analyze).to_be_disabled()
-            page.screenshot(path=evidence / "recording-live-chroma.png")
+            stop = recorder.get_by_role("button", name="Stop recording", exact=True)
             print("Live histogram: C, E, and G bars populated while recording.", flush=True)
-            expect(recorder.get_by_role("timer", name="Recording duration")).to_have_text("00:05", timeout=15_000)
-            recorder.get_by_role("button", name="Stop recording", exact=True).click()
-            expect(analyze).to_be_enabled(timeout=20_000)
-            analyze.click()
-            verify_result(frame)
+            for label in ("Linear SVM", "Neural Network", "Random Forest", "Gradient Boosting", "Essentia (Krumhansl–Schmuckler)"):
+                if label != "Linear SVM":
+                    select_engine(frame, label)
+                verify_result(frame, label, live=True, known_pair=label in ("Linear SVM", "Neural Network"))
+                expect(stop).to_be_enabled()
+                expect(chart).to_be_visible()
+                print(f"{label}: three live pairs while the same recorder is running.", flush=True)
+                if label == "Linear SVM":
+                    page.screenshot(path=evidence / "recording-live-chroma.png")
+
+            stop.click()
+            verify_result(frame, "Essentia (Krumhansl–Schmuckler)")
             page.screenshot(path=evidence / "microphone.png")
-            print("Virtual microphone: captured and analyzed C major / A minor plus two alternatives.", flush=True)
+            print("Stopped recording: final C major / A minor without clicking Analyze.", flush=True)
             recorder.get_by_role("button", name="Clear recording", exact=True).click()
-            expect(analyze).to_be_disabled()
+            expect(frame.locator(".studio-reading")).to_have_count(0)
         except Exception:
             page.screenshot(path=evidence / "failure.png")
             raise

@@ -6,11 +6,11 @@
 
 Deploy `AreteKaiAndreia/Key_Signature` from `main` with
 `streamlit_app.py` as the entry point and **Python 3.11** in Advanced
-settings. Leave Secrets empty. The app defaults to the custom classifier
-bundled as `keyclf/open_key_model.json`. The engine selector also offers
-Linear SVM (`keyclf/linear_svm.json`) and Essentia. All rank three relative-key pairs
-by each pair's higher key score. They accept a microphone recording or an
-MP3/MP4 upload, with a 120-second analysis limit.
+settings. Leave Secrets empty. The app defaults to Neural Network
+(`keyclf/open_key_model.json`). The engine selector also offers Linear SVM,
+Random Forest, Gradient Boosting, and Essentia. Each predicts three relative
+key pairs from short previews while the microphone runs. Uploading a file
+or stopping the recorder starts full analysis, up to the first 120 seconds.
 
 The owner signs in at [Streamlit Community Cloud](https://share.streamlit.io/)
 and completes any GitHub connection prompt. See the

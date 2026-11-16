@@ -25,9 +25,11 @@ def test_recording_rejects_room_noise_without_music(hum_hz):
         clean_recording(samples.astype(np.float32), SAMPLE_RATE)
 
 
-@pytest.mark.parametrize("engine", ["Custom ML (open-trained)", "Linear SVM"])
+@pytest.mark.parametrize("engine", ["Neural Network", "Linear SVM"])
 def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
     from streamlit.testing.v1 import AppTest
+
+    from keyclf.streaming_recorder import Recording
 
     recorder_rate = 44100
     time = np.arange(5 * recorder_rate) / recorder_rate
@@ -36,20 +38,19 @@ def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
     chord *= (time >= 0.7) & (time < 4.3)
     recording = BytesIO()
     sf.write(recording, np.clip(chord + noise, -1, 1), recorder_rate, format="WAV")
-    with patch("keyclf.live_recorder.record_soundbite", return_value=recording.getvalue()) as microphone:
+    with patch("keyclf.streaming_recorder.record_soundbite", return_value=Recording(content=recording.getvalue())) as microphone:
         app = AppTest.from_file(APP, default_timeout=45).run()
-        assert app.selectbox[0].value == "Custom ML (open-trained)"
+        assert app.selectbox[0].value == "Neural Network"
         app.selectbox[0].set_value(engine).run()
         app.radio[0].set_value("Record a soundbite").run()
-        app.button[0].click().run()
+        assert not app.button
         assert not app.exception
         assert any("<span>C major</span> <span>A minor</span>" in item.value for item in app.get("html"))
 
         noise_only = BytesIO()
         sf.write(noise_only, noise, recorder_rate, format="WAV")
-        microphone.return_value = noise_only.getvalue()
+        microphone.return_value = Recording(content=noise_only.getvalue())
         app.run()
-        app.button[0].click().run()
         assert not app.exception
         assert any(NO_SIGNAL in item.value and 'role="alert"' in item.value for item in app.get("html"))
         assert not any('class="studio-reading studio-pair"' in item.value for item in app.get("html"))

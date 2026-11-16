@@ -15,6 +15,7 @@ import streamlit as st
 from keyclf.cloud_audio import SAMPLE_RATE, decode_clip
 from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
 from keyclf.keys import PITCH_NAMES, key_name
+from keyclf.live_microphone import record_soundbite
 from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
 from keyclf.open_candidate import CandidateKeyModel
 from keyclf.open_linear_svm import LinearKeySVM
@@ -125,13 +126,13 @@ def main() -> None:
                                   horizontal=True, label_visibility="collapsed")
                 recording = source == "Record a soundbite"
                 if recording:
-                    clip = st.audio_input("Record a soundbite", sample_rate=44100, label_visibility="collapsed")
+                    content, filename = record_soundbite()
                     st.caption("Record 5–15 seconds close to the music. Include a few notes or chords.")
                 else:
                     clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")
+                    content, filename = (clip.getvalue(), clip.name) if clip is not None else (b"", "")
                 st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
             engine = st.selectbox("Prediction engine", engines)
-            content = clip.getvalue() if clip is not None else b""
             analyze = st.button("Analyze", type="primary", disabled=not content)
         readout = output.empty()
     predictions = st.session_state.setdefault("relative_pair_predictions", {})
@@ -153,7 +154,7 @@ def main() -> None:
                     revision = LOCAL.stat().st_mtime_ns if allow_local and LOCAL.is_file() else 0
                     model, variant, version = get_model(model_url, model_sha, allow_local, revision)
                     model_label = f"{variant} ({version})"
-                samples, clipped = decode_clip(content, "recording.wav" if recording else clip.name)
+                samples, clipped = decode_clip(content, filename)
                 if recording:
                     samples = clean_recording(samples, SAMPLE_RATE)
                 if engine in (OPEN_ML, LINEAR_SVM):

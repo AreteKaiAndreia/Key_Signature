@@ -60,15 +60,27 @@ def main() -> None:
                 expect(analyze).to_be_disabled()
 
             frame.get_by_text("Record a soundbite", exact=True).click()
-            recorder = frame.get_by_test_id("stAudioInput")
+            recorder = frame.get_by_role("region", name="Microphone recorder")
             recorder.get_by_role("button", name="Record", exact=True).click()
-            expect(recorder.get_by_test_id("stAudioInputWaveformTimeCode")).to_have_text("00:05", timeout=15_000)
+            chart = recorder.get_by_role("figure", name="Live chroma preview")
+            expect(chart).to_be_visible()
+            for pitch in ("C", "E", "G"):
+                expect(chart.locator(f'[data-pitch="{pitch}"]')).to_have_attribute(
+                    "aria-label", re.compile(rf"^{pitch}: [1-9]\d\.\d%$"), timeout=5_000,
+                )
+            expect(recorder.get_by_role("button", name="Stop recording", exact=True)).to_be_enabled()
+            expect(analyze).to_be_disabled()
+            page.screenshot(path=evidence / "recording-live-chroma.png")
+            print("Live histogram: C, E, and G bars populated while recording.", flush=True)
+            expect(recorder.get_by_role("timer", name="Recording duration")).to_have_text("00:05", timeout=15_000)
             recorder.get_by_role("button", name="Stop recording", exact=True).click()
             expect(analyze).to_be_enabled(timeout=20_000)
             analyze.click()
             verify_result(frame)
             page.screenshot(path=evidence / "microphone.png")
             print("Virtual microphone: captured and analyzed C major / A minor plus two alternatives.", flush=True)
+            recorder.get_by_role("button", name="Clear recording", exact=True).click()
+            expect(analyze).to_be_disabled()
         except Exception:
             page.screenshot(path=evidence / "failure.png")
             raise

@@ -63,6 +63,8 @@ The Community Cloud entry point, `streamlit_app.py`, accepts a microphone
 recording or MP3/MP4 and ranks three relative-key pairs. The default custom
 model, Linear SVM, and Essentia are available in the engine selector.
 C major and A minor, for example, share one result.
+The browser updates a live chroma histogram during microphone capture.
+Select Analyze after stopping to get the engine's final prediction.
 The custom model learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
 original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).

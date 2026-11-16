@@ -6,6 +6,7 @@
 !keyclf/
 !keyclf/*.py
 !keyclf/*.css
+!keyclf/live_microphone.js
 !keyclf/open_key_model.json
 !keyclf/linear_svm.json
 !streamlit_app.py

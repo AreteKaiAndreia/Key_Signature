@@ -12,7 +12,7 @@ import numpy as np
 SAMPLE_RATE = 22050
 MAX_BYTES = 50 * 1024**2
 MAX_SECONDS = 120
-FORMATS = {".wav": "wav", ".mp3": "mp3", ".mp4": "mov"}
+FORMATS = {".wav": "wav", ".mp3": "mp3", ".mp4": "mov", ".webm": "matroska", ".ogg": "ogg"}
 
 
 def decode_clip(content: bytes, filename: str) -> tuple[np.ndarray, bool]:

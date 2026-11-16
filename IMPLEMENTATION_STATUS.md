@@ -34,6 +34,17 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Live microphone histogram
+
+- The microphone recorder updates a 12-bin chroma preview in the browser
+  every 100 ms during capture. The chart accumulates detected pitch energy.
+  Streamlit receives the completed clip when recording stops, and Analyze
+  runs the existing noise cleanup and prediction path.
+- Next verification after deploy:
+  `gh workflow run public-svm-smoke.yml --ref main`. The browser check
+  feeds a synthetic chord into a virtual microphone and requires C, E, and
+  G bars before stopping, then checks the final key pair and both uploads.
+
 ### Linear SVM public option
 
 - The existing custom classifier is the first engine in a new session. Linear

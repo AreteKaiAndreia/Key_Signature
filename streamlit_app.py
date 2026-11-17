@@ -25,7 +25,7 @@ from keyclf.open_linear_svm import LinearKeySVM
 from keyclf.open_tree_models import load_tree_models, tree_scores
 from keyclf.relative_pairs import rank_relative_pairs
 from keyclf.studio import STUDIO_HEADER, studio_css
-from keyclf.streaming_recorder import Recording, record_soundbite
+from keyclf.streaming_recorder import LiveAudio, Recording, record_soundbite
 from threadpoolctl import threadpool_limits
 
 ML = "Research ML (random forest)"
@@ -112,12 +112,13 @@ def score_clip(content, filename, engine, recording, research_config):
 
 
 def render_readout(stage: str, result=None, message: str = "", *, engine: str = OPEN_ML,
-                   ack: str = "", preview_duration: float = 0) -> str:
+                   ack: str = "", preview_frames: int = 0, analyzed_frames: int = 0) -> str:
     """Render the same readout through empty, loading, error, and full states."""
     title = "Live key prediction" if stage in ("live", "listening") else "Detected key pair"
     classes = "studio-result studio-result-live" if stage == "live" else "studio-result"
     header = (f'<section class="{classes}" aria-labelledby="readout-title"'
-              f' data-engine="{escape(engine)}" data-preview-ack="{escape(ack)}">'
+              f' data-engine="{escape(engine)}" data-preview-ack="{escape(ack)}"'
+              f' data-preview-frames="{preview_frames}">'
               f'<h2 class="studio-panel-title" id="readout-title">{title}</h2>')
     if stage == "loading":
         return header + '<div class="studio-wait" aria-hidden="true"></div><p class="studio-empty" role="status">Analyzing audio…</p></section>'
@@ -146,9 +147,10 @@ def render_readout(stage: str, result=None, message: str = "", *, engine: str = 
         for pitch, value in zip(PITCH_NAMES, profile, strict=True)
     )
     notices = ""
-    if stage == "live" and preview_duration:
-        notices += (f'<p class="studio-confidence" data-preview-duration="{preview_duration:.3f}">'
-                    f'Based on {preview_duration:.1f} seconds so far.</p>')
+    if stage == "live" and analyzed_frames:
+        seconds = analyzed_frames / SAMPLE_RATE
+        notices += (f'<p class="studio-confidence" data-preview-duration="{seconds:.3f}">'
+                    f'Based on {seconds:.1f} seconds so far.</p>')
     if engine == KS:
         notices += '<p class="studio-confidence">Match scores measure correlation with each key profile.</p>'
     if clipped:
@@ -209,25 +211,33 @@ def main() -> None:
     research_config = allow_local, model_url, model_sha
     if mic.take_id != st.session_state.get("preview_take"):
         st.session_state.update(preview_take=mic.take_id, preview_ack="", live_key_result=None,
-                                live_preview_duration=0)
+                                live_analyzed_frames=0)
+        st.session_state.pop("live_audio", None)
     if mic.active:
+        audio = st.session_state.setdefault("live_audio", LiveAudio())
         ack = st.session_state["preview_ack"]
         if mic.token and mic.token != ack:
+            audio.append(mic.preview_offset, mic.preview)
+            ack = st.session_state["preview_ack"] = mic.token
+
+        live_engine, live_result = st.session_state["live_key_result"] or (None, None)
+        analyzed = st.session_state.get("live_analyzed_frames", 0)
+        if audio.frames and (audio.frames != analyzed or live_engine != engine):
             slot = inference_slot()
-            if mic.preview and slot.acquire(blocking=False):
+            if slot.acquire(blocking=False):
                 try:
-                    result, _ = score_clip(mic.preview, "recording.wav", engine, True, research_config)
-                    st.session_state["live_key_result"] = (engine, result)
-                    st.session_state["live_preview_duration"] = mic.preview_duration
+                    live_result, _ = score_clip(audio.wav(), "recording.wav", engine, True, research_config)
+                    live_engine, analyzed = engine, audio.frames
+                    st.session_state["live_key_result"] = (live_engine, live_result)
+                    st.session_state["live_analyzed_frames"] = analyzed
                 finally:
                     slot.release()
-            ack = st.session_state["preview_ack"] = mic.token
-        live_engine, live_result = st.session_state["live_key_result"] or (None, None)
         if live_result and live_engine == engine:
             readout.html(render_readout("live", live_result, engine=engine, ack=ack,
-                                        preview_duration=st.session_state.get("live_preview_duration", 0)))
+                                        preview_frames=audio.frames, analyzed_frames=analyzed))
         else:
-            readout.html(render_readout("listening", message="Listening for clear musical notes…", engine=engine, ack=ack))
+            readout.html(render_readout("listening", message="Listening for clear musical notes…", engine=engine,
+                                        ack=ack, preview_frames=audio.frames))
     elif content:
         if engine not in predictions:
             readout.html(render_readout("loading", engine=engine))

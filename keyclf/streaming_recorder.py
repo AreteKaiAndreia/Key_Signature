@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import base64
 import re
-from dataclasses import dataclass
+import wave
+from dataclasses import dataclass, field
 from functools import lru_cache
+from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
@@ -15,7 +17,9 @@ from .keys import PITCH_NAMES
 
 PREVIEW_SECONDS = 3
 WAV_HEADER_BYTES = 44
-PREVIEW_BYTES = WAV_HEADER_BYTES + 2 * SAMPLE_RATE * MAX_SECONDS
+MAX_FRAMES = SAMPLE_RATE * MAX_SECONDS
+PREVIEW_PACKET_FRAMES = 2 * SAMPLE_RATE * PREVIEW_SECONDS
+PREVIEW_BYTES = WAV_HEADER_BYTES + 2 * PREVIEW_PACKET_FRAMES
 
 
 @dataclass(frozen=True)
@@ -27,11 +31,48 @@ class Recording:
     take_id: str = ""
     preview: bytes = b""
     token: str = ""
+    preview_offset: int = 0
+
+
+@dataclass
+class LiveAudio:
+    """The acknowledged PCM prefix of the current microphone take."""
+
+    pcm: bytearray = field(default_factory=bytearray)
 
     @property
-    def preview_duration(self) -> float:
-        """Return seconds of browser-generated mono PCM in this preview."""
-        return max(0, len(self.preview) - WAV_HEADER_BYTES) / (2 * SAMPLE_RATE)
+    def frames(self) -> int:
+        return len(self.pcm) // 2
+
+    def append(self, offset: int, packet: bytes) -> None:
+        """Append new PCM, ignoring gaps, duplicate frames, and invalid packets."""
+        if not packet or not 0 <= offset <= self.frames:
+            return
+        try:
+            with wave.open(BytesIO(packet), "rb") as reader:
+                params = reader.getparams()
+                if (params.nchannels, params.sampwidth, params.framerate) != (1, 2, SAMPLE_RATE):
+                    return
+                frames = params.nframes
+                if frames > PREVIEW_PACKET_FRAMES or offset + frames > MAX_FRAMES:
+                    return
+                samples = reader.readframes(frames)
+        except (wave.Error, EOFError, ValueError):
+            return
+        if len(samples) != 2 * frames:
+            return
+        start = 2 * offset
+        overlap = min(len(samples), len(self.pcm) - start)
+        if self.pcm[start : start + overlap] == samples[:overlap]:
+            self.pcm.extend(samples[overlap:])
+
+    def wav(self) -> bytes:
+        """Build a WAV snapshot for the same scoring path as the finished take."""
+        out = BytesIO()
+        with wave.open(out, "wb") as writer:
+            writer.setparams((1, 2, SAMPLE_RATE, 0, "NONE", "not compressed"))
+            writer.writeframes(self.pcm)
+        return out.getvalue()
 
 
 PITCH_BARS = "".join(
@@ -79,7 +120,7 @@ def record_soundbite() -> Recording:
     state = recorder_component(script)(
         key="microphone_take",
         data={"maxSeconds": MAX_SECONDS, "maxBytes": MAX_BYTES, "sampleRate": SAMPLE_RATE,
-              "previewSeconds": PREVIEW_SECONDS},
+              "previewSeconds": PREVIEW_SECONDS, "previewPacketFrames": PREVIEW_PACKET_FRAMES},
         default={"take": None}, on_take_change=lambda: None, on_preview_change=lambda: None,
     )
     take = state.take
@@ -91,11 +132,15 @@ def record_soundbite() -> Recording:
         if isinstance(message, dict) and message.get("id") == take.get("id"):
             token = message.get("token")
             if isinstance(token, str) and re.fullmatch(r"[a-f0-9-]{36}/[1-9]\d{0,2}", token):
-                try:
-                    return Recording(active=True, take_id=take_id,
-                                     preview=decode_payload(message.get("audio"), PREVIEW_BYTES), token=token)
-                except ValueError:
-                    return Recording(active=True, take_id=take_id, token=token)
+                offset = message.get("offset")
+                if type(offset) is int and 0 <= offset < MAX_FRAMES:
+                    try:
+                        audio = decode_payload(message.get("audio"), PREVIEW_BYTES)
+                        return Recording(active=True, take_id=take_id, preview=audio, token=token,
+                                         preview_offset=offset)
+                    except ValueError:
+                        pass
+                return Recording(active=True, take_id=take_id, token=token)
         return Recording(active=True, take_id=take_id)
     if take.get("audio") is not None:
         try:

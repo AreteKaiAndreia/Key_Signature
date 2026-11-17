@@ -50,7 +50,8 @@ async function recordingPcm(blob, sampleRate, maxFrames) {
   return samples;
 }
 
-function recordingWav(parts, sampleRate, pcmBytes) {
+function recordingWav(samples, sampleRate) {
+  const pcmBytes = samples.length;
   const header = new DataView(new ArrayBuffer(44));
   const writeText = (offset, text) => {
     for (let i = 0; i < text.length; i += 1) header.setUint8(offset + i, text.charCodeAt(i));
@@ -67,7 +68,7 @@ function recordingWav(parts, sampleRate, pcmBytes) {
   header.setUint16(34, 16, true);
   writeText(36, "data");
   header.setUint32(40, pcmBytes, true);
-  return new Blob([header, ...parts], {type: "audio/wav"});
+  return new Blob([header, samples], {type: "audio/wav"});
 }
 
 export default function ({parentElement, data, setStateValue, setTriggerValue}) {
@@ -135,28 +136,39 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
       segment = preview;
       const chunks = [];
       preview.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      preview.onerror = unavailable;
       preview.onstop = () => {
         if (!active()) return;
         nextPreview(id, mimeType, capture);
         // Add every segment in capture order, even when the server is busy.
         capture.queue = capture.queue.then(async () => {
           if (!active()) return;
-          const remaining = data.maxSeconds * data.sampleRate - capture.bytes / 2;
-          if (!remaining) return;
-          const blob = new Blob(chunks, {type: preview.mimeType});
-          const samples = await recordingPcm(blob, data.sampleRate, remaining);
-          if (!active() || !samples.length) return;
-          capture.parts.push(samples);
-          capture.bytes += samples.length;
+          const remaining = capture.pcm.length / 2 - capture.frames;
+          if (remaining) {
+            const blob = new Blob(chunks, {type: preview.mimeType});
+            const samples = await recordingPcm(blob, data.sampleRate, remaining);
+            if (!active()) return;
+            capture.pcm.set(samples, 2 * capture.frames);
+            capture.frames += samples.length / 2;
+          }
 
-          const acknowledged = document.querySelector("[data-preview-ack]")?.dataset.previewAck;
-          if (capture.pending && acknowledged !== capture.pending && performance.now() - capture.sentAt < 30000) return;
+          const reply = document.querySelector("[data-preview-ack]")?.dataset;
+          if (capture.pending && reply?.previewAck === capture.pending) {
+            capture.confirmed = Number(reply.previewFrames);
+            capture.pending = null;
+          }
+          if (capture.pending && performance.now() - capture.sentAt < 6000) return;
+          const offset = capture.confirmed;
+          const end = Math.min(capture.frames, offset + data.previewPacketFrames);
+          if (end <= offset) return;
+
+          // Resend from the last confirmed sample after a missed acknowledgement.
           const token = id + "/" + (++capture.sequence);
           capture.pending = token;
           capture.sentAt = performance.now();
-          const wav = recordingWav(capture.parts, data.sampleRate, capture.bytes);
-          const audio = await encodeBlob(wav);
-          if (active()) setTriggerValue("preview", {id, token, audio});
+          const samples = capture.pcm.subarray(2 * offset, 2 * end);
+          const audio = await encodeBlob(recordingWav(samples, data.sampleRate));
+          if (active()) setTriggerValue("preview", {id, token, offset, audio});
         }).catch(unavailable);
       };
       preview.start();
@@ -204,7 +216,10 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
       let failed = false;
       const id = crypto.randomUUID();
       takeId = id;
-      const capture = {parts: [], bytes: 0, queue: Promise.resolve(), sequence: 0};
+      const capture = {
+        pcm: new Uint8Array(2 * data.maxSeconds * data.sampleRate),
+        frames: 0, confirmed: 0, sequence: 0, queue: Promise.resolve(),
+      };
       recorder = new MediaRecorder(stream, {mimeType, audioBitsPerSecond: 128000});
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
@@ -225,7 +240,7 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
           const blob = new Blob(chunks, {type: recorder.mimeType});
           if (!blob.size || blob.size > data.maxBytes) throw new Error("Invalid recording size");
           const samples = await recordingPcm(blob, data.sampleRate, data.maxSeconds * data.sampleRate);
-          const wav = recordingWav([samples], data.sampleRate, samples.length);
+          const wav = recordingWav(samples, data.sampleRate);
           const audio = await encodeBlob(wav);
           if (disposed) return;
           playbackURL = URL.createObjectURL(wav);

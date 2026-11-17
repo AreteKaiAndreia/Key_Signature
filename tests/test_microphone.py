@@ -54,3 +54,25 @@ def test_noisy_microphone_wav_reaches_the_prediction_readout(engine):
         assert not app.exception
         assert any(NO_SIGNAL in item.value and 'role="alert"' in item.value for item in app.get("html"))
         assert not any('class="studio-reading studio-pair"' in item.value for item in app.get("html"))
+
+
+def test_live_audio_append_recovers_overlapping_retries():
+    from keyclf.streaming_recorder import LiveAudio
+
+    def packet(values):
+        buffer = BytesIO()
+        sf.write(buffer, np.asarray(values, dtype=np.int16), SAMPLE_RATE, format="WAV", subtype="PCM_16")
+        return buffer.getvalue()
+
+    live = LiveAudio()
+    live.append(0, packet([100, 200]))
+    live.append(0, packet([100, 200]))
+    live.append(3, packet([999]))  # Keep the prefix until the gap arrives.
+    live.append(1, packet([800, 999]))  # A retry must agree with the existing samples.
+    assert live.frames == 2
+
+    live.append(1, packet([200, 300, 400]))
+    assert live.frames == 4
+    waveform, rate = sf.read(BytesIO(live.wav()), dtype="int16")
+    assert rate == SAMPLE_RATE
+    np.testing.assert_array_equal(waveform, [100, 200, 300, 400])

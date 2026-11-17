@@ -34,6 +34,15 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Top-three benchmarks and engine selector — 2026-11-16
+
+- Deployed from `d3d3281`. Accuracy, macro precision, and macro recall now
+  cover the first exact key, the top three exact keys, and the top three
+  displayed relative key pairs on the same 166 held-out clips.
+- The [signed-out browser run](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/43987708138)
+  verified the benchmark table for all six methods, keyboard navigation
+  with typing disabled, and continued upload and live analysis.
+
 ### Six methods in the public analyzer — 2026-11-16
 
 - Added Soft Voting to the method selector, including automatic uploads

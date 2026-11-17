@@ -162,4 +162,4 @@ test recordings. Macro averaging gives equal weight to all 24 keys or 12
 relative pairs. Precision assigns zero to a key or pair the method never
 predicted. To regenerate the summary from the local benchmark reports and
 Essentia checkpoints, run
-`python scripts/export_method_benchmarks.py`.
+`python -m scripts.export_method_benchmarks`.

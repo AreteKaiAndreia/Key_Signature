@@ -111,7 +111,8 @@ def score_clip(content, filename, engine, recording, research_config):
         return None, "Analysis failed. Try another clip or switch engines."
 
 
-def render_readout(stage: str, result=None, message: str = "", *, engine: str = OPEN_ML, ack: str = "") -> str:
+def render_readout(stage: str, result=None, message: str = "", *, engine: str = OPEN_ML,
+                   ack: str = "", preview_duration: float = 0) -> str:
     """Render the same readout through empty, loading, error, and full states."""
     title = "Live key prediction" if stage in ("live", "listening") else "Detected key pair"
     classes = "studio-result studio-result-live" if stage == "live" else "studio-result"
@@ -145,6 +146,9 @@ def render_readout(stage: str, result=None, message: str = "", *, engine: str = 
         for pitch, value in zip(PITCH_NAMES, profile, strict=True)
     )
     notices = ""
+    if stage == "live" and preview_duration:
+        notices += (f'<p class="studio-confidence" data-preview-duration="{preview_duration:.3f}">'
+                    f'Based on {preview_duration:.1f} seconds so far.</p>')
     if engine == KS:
         notices += '<p class="studio-confidence">Match scores measure correlation with each key profile.</p>'
     if clipped:
@@ -188,7 +192,7 @@ def main() -> None:
                     mic = record_soundbite()
                     content, filename = mic.content, "recording.wav"
                     st.caption("Record 5–15 seconds close to the music. Include a few notes or chords.")
-                    st.caption("Short samples are sent for live predictions. Audio is used only for analysis during this session.")
+                    st.caption("Live predictions use the recording so far. Audio is used only for analysis during this session.")
                 else:
                     clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")
                     content, filename = (clip.getvalue(), clip.name) if clip is not None else (b"", "")
@@ -204,7 +208,8 @@ def main() -> None:
         predictions.clear()
     research_config = allow_local, model_url, model_sha
     if mic.take_id != st.session_state.get("preview_take"):
-        st.session_state.update(preview_take=mic.take_id, preview_ack="", live_key_result=None)
+        st.session_state.update(preview_take=mic.take_id, preview_ack="", live_key_result=None,
+                                live_preview_duration=0)
     if mic.active:
         ack = st.session_state["preview_ack"]
         if mic.token and mic.token != ack:
@@ -213,12 +218,14 @@ def main() -> None:
                 try:
                     result, _ = score_clip(mic.preview, "recording.wav", engine, True, research_config)
                     st.session_state["live_key_result"] = (engine, result)
+                    st.session_state["live_preview_duration"] = mic.preview_duration
                 finally:
                     slot.release()
             ack = st.session_state["preview_ack"] = mic.token
         live_engine, live_result = st.session_state["live_key_result"] or (None, None)
         if live_result and live_engine == engine:
-            readout.html(render_readout("live", live_result, engine=engine, ack=ack))
+            readout.html(render_readout("live", live_result, engine=engine, ack=ack,
+                                        preview_duration=st.session_state.get("live_preview_duration", 0)))
         else:
             readout.html(render_readout("listening", message="Listening for clear musical notes…", engine=engine, ack=ack))
     elif content:

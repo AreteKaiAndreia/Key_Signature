@@ -11,7 +11,7 @@ settings. Leave Secrets empty. The app defaults to Neural Network
 Random Forest, Gradient Boosting, Essentia, and Soft Voting. The selected
 method shows how it works and its held-out accuracy, recall, and precision.
 Each predicts three relative
-key pairs from short previews while the microphone runs. Uploading a file
+key pairs from the audio recorded so far while the microphone runs. Uploading a file
 or stopping the recorder starts full analysis, up to the first 120 seconds.
 
 The owner signs in at [Streamlit Community Cloud](https://share.streamlit.io/)

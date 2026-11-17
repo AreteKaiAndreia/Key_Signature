@@ -1,6 +1,7 @@
 """Verify the hosted upload and recorder paths from an isolated CI browser."""
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -66,15 +67,21 @@ def main() -> None:
         ffmpeg("-i", str(fixture), str(mp3))
         ffmpeg("-f", "lavfi", "-i", "color=s=160x90", "-i", str(fixture), "-shortest", str(mp4))
 
+        microphone = fixture.with_name("changing-keys.wav")
+        shifted = "0.14*(sin(2*PI*369.994*t)+sin(2*PI*466.164*t)+sin(2*PI*554.365*t))"
+        progression = f"aevalsrc='if(lt(t,24),{tone},{shifted})':s=44100:d=48"
+        ffmpeg("-f", "lavfi", "-i", progression, str(microphone))
+
         browser = playwright.chromium.launch(channel="chrome", args=[
             "--use-fake-device-for-media-stream",
             "--use-fake-ui-for-media-stream",
-            f"--use-file-for-fake-audio-capture={fixture}",
+            f"--use-file-for-fake-audio-capture={microphone}",
         ])
         page = browser.new_page(viewport={"width": 1280, "height": 840})
         try:
-            page.goto(APP, wait_until="domcontentloaded", timeout=60_000)
-            frame = page.frame_locator('iframe[title="streamlitApp"]')
+            app_url = os.environ.get("KEYCLF_TEST_APP_URL", APP)
+            page.goto(app_url, wait_until="domcontentloaded", timeout=60_000)
+            frame = page.frame_locator('iframe[title="streamlitApp"]') if app_url == APP else page
             engine = frame.get_by_role("combobox", name="Prediction engine")
             expect(engine).to_have_value("Neural Network", timeout=60_000)
             expect(engine).to_have_attribute("inputmode", "none")
@@ -118,12 +125,29 @@ def main() -> None:
                 if label == "Linear SVM":
                     page.screenshot(path=evidence / "recording-live-chroma.png")
 
+            expect(chart.locator('[data-pitch="F#"]')).to_have_attribute(
+                "aria-label", re.compile(r"^F#: [1-9]\d?\.\d%$"), timeout=45_000,
+            )
+            live = frame.get_by_role("region", name="Live key prediction")
+            expect(live.locator("[data-preview-duration]")).to_have_attribute(
+                "data-preview-duration", re.compile(r"^(?:[3-9]\d|1\d{2})\."), timeout=45_000,
+            )
+            verify_result(frame, "Soft Voting", live=True)
+            print("After the chord changed to F-sharp major, the live result still ranked the accumulated C major / A minor first.", flush=True)
+
             stop.click()
             verify_result(frame, "Soft Voting")
             page.screenshot(path=evidence / "microphone.png")
             print("Stopped recording: final C major / A minor without clicking Analyze.", flush=True)
             recorder.get_by_role("button", name="Clear recording", exact=True).click()
             expect(frame.locator(".studio-reading")).to_have_count(0)
+            recorder.get_by_role("button", name="Record", exact=True).click()
+            expect(live.locator("[data-preview-duration]")).to_have_attribute(
+                "data-preview-duration", re.compile(r"^[2-6]\."), timeout=45_000,
+            )
+            stop.click()
+            verify_result(frame, "Soft Voting", known_pair=False)
+            print("A new take starts the accumulated duration over.", flush=True)
         except Exception:
             page.screenshot(path=evidence / "failure.png")
             raise

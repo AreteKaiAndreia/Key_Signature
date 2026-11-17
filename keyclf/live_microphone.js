@@ -34,34 +34,40 @@ function encodeBlob(blob) {
   });
 }
 
-async function recordingWav(blob, sampleRate, maxSeconds) {
+async function recordingPcm(blob, sampleRate, maxFrames) {
   const decoder = new OfflineAudioContext(1, 1, sampleRate);
   const audio = await decoder.decodeAudioData(await blob.arrayBuffer());
-  const frames = Math.min(audio.length, maxSeconds * sampleRate);
-  const bytes = new DataView(new ArrayBuffer(44 + 2 * frames));
-  const writeText = (offset, text) => {
-    for (let i = 0; i < text.length; i += 1) bytes.setUint8(offset + i, text.charCodeAt(i));
-  };
-  writeText(0, "RIFF");
-  bytes.setUint32(4, 36 + 2 * frames, true);
-  writeText(8, "WAVEfmt ");
-  bytes.setUint32(16, 16, true);
-  bytes.setUint16(20, 1, true);  // PCM
-  bytes.setUint16(22, 1, true);  // mono
-  bytes.setUint32(24, sampleRate, true);
-  bytes.setUint32(28, 2 * sampleRate, true);
-  bytes.setUint16(32, 2, true);
-  bytes.setUint16(34, 16, true);
-  writeText(36, "data");
-  bytes.setUint32(40, 2 * frames, true);
+  const frames = Math.min(audio.length, maxFrames);
+  const samples = new Uint8Array(2 * frames);
+  const pcm = new DataView(samples.buffer);
   const channels = Array.from({length: audio.numberOfChannels}, (_, index) => audio.getChannelData(index));
   for (let i = 0; i < frames; i += 1) {
     let sample = 0;
     for (const channel of channels) sample += channel[i];
     sample = Math.max(-1, Math.min(1, sample / channels.length));
-    bytes.setInt16(44 + 2 * i, Math.round(sample * 32767), true);
+    pcm.setInt16(2 * i, Math.round(sample * 32767), true);
   }
-  return new Blob([bytes], {type: "audio/wav"});
+  return samples;
+}
+
+function recordingWav(parts, sampleRate, pcmBytes) {
+  const header = new DataView(new ArrayBuffer(44));
+  const writeText = (offset, text) => {
+    for (let i = 0; i < text.length; i += 1) header.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeText(0, "RIFF");
+  header.setUint32(4, 36 + pcmBytes, true);
+  writeText(8, "WAVEfmt ");
+  header.setUint32(16, 16, true);
+  header.setUint16(20, 1, true);  // PCM
+  header.setUint16(22, 1, true);  // mono
+  header.setUint32(24, sampleRate, true);
+  header.setUint32(28, 2 * sampleRate, true);
+  header.setUint16(32, 2, true);
+  header.setUint16(34, 16, true);
+  writeText(36, "data");
+  header.setUint32(40, pcmBytes, true);
+  return new Blob([header, ...parts], {type: "audio/wav"});
 }
 
 export default function ({parentElement, data, setStateValue, setTriggerValue}) {
@@ -75,7 +81,7 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
   const bars = pitches.map(pitch => pitch.querySelector(".studio-bar"));
   const energy = new Float64Array(pitches.length);
   let stream, context, recorder, refresh, timeout, playbackURL;
-  let segment, segmentTimer, takeId, sequence, pending, sentAt;
+  let segment, segmentTimer, takeId;
   let disposed = false;
 
   function showMessage(text) {
@@ -117,37 +123,48 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
     playback.hidden = clear.hidden = true;
   }
 
-  function nextPreview(id, mimeType) {
-    if (disposed || takeId !== id || recorder?.state !== "recording") return;
+  function nextPreview(id, mimeType, capture) {
+    const active = () => !disposed && takeId === id && recorder?.state === "recording" && !capture.failed;
+    const unavailable = () => {
+      if (active()) showMessage("Live predictions are unavailable. The finished recording will still be analyzed.");
+      capture.failed = true;
+    };
+    if (!active()) return;
     try {
       const preview = new MediaRecorder(stream, {mimeType, audioBitsPerSecond: 64000});
       segment = preview;
       const chunks = [];
       preview.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-      preview.onstop = async () => {
-        if (disposed || takeId !== id || recorder?.state !== "recording") return;
-        nextPreview(id, mimeType);
-        const acknowledged = document.querySelector("[data-preview-ack]")?.dataset.previewAck;
-        // Keep one server request in flight even when the first model call is slow.
-        if (pending && acknowledged !== pending && performance.now() - sentAt < 30000) return;
-        pending = id + "/" + (++sequence);
-        sentAt = performance.now();
-        try {
+      preview.onstop = () => {
+        if (!active()) return;
+        nextPreview(id, mimeType, capture);
+        // Add every segment in capture order, even when the server is busy.
+        capture.queue = capture.queue.then(async () => {
+          if (!active()) return;
+          const remaining = data.maxSeconds * data.sampleRate - capture.bytes / 2;
+          if (!remaining) return;
           const blob = new Blob(chunks, {type: preview.mimeType});
-          const audio = await encodeBlob(await recordingWav(blob, data.sampleRate, data.previewSeconds));
-          if (!disposed && takeId === id && recorder?.state === "recording") {
-            setTriggerValue("preview", {id, token: pending, audio});
-          }
-        } catch {
-          pending = null;
-        }
+          const samples = await recordingPcm(blob, data.sampleRate, remaining);
+          if (!active() || !samples.length) return;
+          capture.parts.push(samples);
+          capture.bytes += samples.length;
+
+          const acknowledged = document.querySelector("[data-preview-ack]")?.dataset.previewAck;
+          if (capture.pending && acknowledged !== capture.pending && performance.now() - capture.sentAt < 30000) return;
+          const token = id + "/" + (++capture.sequence);
+          capture.pending = token;
+          capture.sentAt = performance.now();
+          const wav = recordingWav(capture.parts, data.sampleRate, capture.bytes);
+          const audio = await encodeBlob(wav);
+          if (active()) setTriggerValue("preview", {id, token, audio});
+        }).catch(unavailable);
       };
       preview.start();
       segmentTimer = setTimeout(() => {
         if (preview.state === "recording") preview.stop();
       }, data.previewSeconds * 1000);
     } catch {
-      showMessage("Live predictions are unavailable on this browser. The finished recording will still be analyzed.");
+      unavailable();
     }
   }
 
@@ -187,8 +204,7 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
       let failed = false;
       const id = crypto.randomUUID();
       takeId = id;
-      sequence = 0;
-      pending = null;
+      const capture = {parts: [], bytes: 0, queue: Promise.resolve(), sequence: 0};
       recorder = new MediaRecorder(stream, {mimeType, audioBitsPerSecond: 128000});
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
@@ -208,7 +224,8 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
           }
           const blob = new Blob(chunks, {type: recorder.mimeType});
           if (!blob.size || blob.size > data.maxBytes) throw new Error("Invalid recording size");
-          const wav = await recordingWav(blob, data.sampleRate, data.maxSeconds);
+          const samples = await recordingPcm(blob, data.sampleRate, data.maxSeconds * data.sampleRate);
+          const wav = recordingWav([samples], data.sampleRate, samples.length);
           const audio = await encodeBlob(wav);
           if (disposed) return;
           playbackURL = URL.createObjectURL(wav);
@@ -227,7 +244,7 @@ export default function ({parentElement, data, setStateValue, setTriggerValue}) 
       recorder.start();
       removePlayback();
       setStateValue("take", {id, active: true});
-      nextPreview(id, mimeType);
+      nextPreview(id, mimeType, capture);
       energy.fill(0);
       drawBars();
       chart.hidden = false;

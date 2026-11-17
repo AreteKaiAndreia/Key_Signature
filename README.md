@@ -62,7 +62,7 @@ offers the locally trained models.
 The Community Cloud entry point, `streamlit_app.py`, analyzes microphone
 recordings and MP3/MP4 uploads automatically. During recording, the browser
 updates the chroma chart and the selected engine ranks three relative-key
-pairs from short audio samples. C major and A minor share one result.
+pairs from the audio recorded so far. C major and A minor share one result.
 The selector offers Neural Network (default), Linear SVM, Random Forest,
 Gradient Boosting, Essentia, and Soft Voting. The selected method shows
 an explanation and its accuracy, macro recall, and macro precision for the

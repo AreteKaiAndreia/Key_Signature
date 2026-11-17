@@ -14,7 +14,8 @@ from .cloud_audio import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
 from .keys import PITCH_NAMES
 
 PREVIEW_SECONDS = 3
-PREVIEW_BYTES = 44 + 2 * SAMPLE_RATE * PREVIEW_SECONDS
+WAV_HEADER_BYTES = 44
+PREVIEW_BYTES = WAV_HEADER_BYTES + 2 * SAMPLE_RATE * MAX_SECONDS
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,11 @@ class Recording:
     take_id: str = ""
     preview: bytes = b""
     token: str = ""
+
+    @property
+    def preview_duration(self) -> float:
+        """Return seconds of browser-generated mono PCM in this preview."""
+        return max(0, len(self.preview) - WAV_HEADER_BYTES) / (2 * SAMPLE_RATE)
 
 
 PITCH_BARS = "".join(
@@ -62,7 +68,7 @@ def decode_payload(encoded, limit: int) -> bytes:
     if not isinstance(encoded, str) or len(encoded) > 4 * ((limit + 2) // 3):
         raise ValueError("Invalid recording size.")
     content = base64.b64decode(encoded, validate=True)
-    if (not 44 <= len(content) <= limit or content[:4] != b"RIFF" or content[8:12] != b"WAVE"):
+    if (not WAV_HEADER_BYTES <= len(content) <= limit or content[:4] != b"RIFF" or content[8:12] != b"WAVE"):
         raise ValueError("Invalid recording format.")
     return content
 

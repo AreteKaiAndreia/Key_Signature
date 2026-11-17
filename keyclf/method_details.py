@@ -4,6 +4,8 @@ from html import escape
 import json
 from pathlib import Path
 
+from .method_diagrams import render_method_diagram
+
 OPEN_ML = "Neural Network"
 LINEAR_SVM = "Linear SVM"
 FOREST = "Random Forest"
@@ -89,9 +91,12 @@ def render_method_details(engine: str) -> str:
         )
     return f"""<section class="studio-method" aria-labelledby="method-title">
       <h2 class="studio-panel-title" id="method-title">How {escape(engine)} works</h2>
-      <div class="studio-method-copy">
-        <p>{escape(first)}</p>
-        <p>{escape(second)}</p>
+      <div class="studio-method-overview">
+        <div class="studio-method-copy">
+          <p>{escape(first)}</p>
+          <p>{escape(second)}</p>
+        </div>
+        {render_method_diagram(method)}
       </div>
       <table class="studio-benchmark" aria-label="Held-out key prediction results">
         <thead><tr><th scope="col">Guesses</th><th scope="col">Accuracy</th>

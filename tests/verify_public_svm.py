@@ -45,7 +45,12 @@ def select_engine(frame, label: str) -> None:
 def verify_method_details(frame, label: str) -> None:
     explanation = frame.get_by_role("region", name=f"How {label} works")
     expect(explanation.locator(".studio-method-copy p")).to_have_count(2)
-    metrics = BENCHMARK["methods"][METHODS[label]]
+    method = METHODS[label]
+    figure = explanation.get_by_role("figure")
+    expect(figure).to_be_visible()
+    expect(figure).to_have_attribute("data-method", method)
+    expect(figure.locator("figcaption")).to_have_text(re.compile(r"\S"))
+    metrics = BENCHMARK["methods"][method]
     table = explanation.get_by_role("table", name="Held-out key prediction results")
     expect(table.locator("thead th")).to_have_text(["Guesses", "Accuracy", "Recall", "Precision"])
     expect(table.locator("tbody th")).to_have_text(["First exact key", "Top 3 exact keys", "Top 3 key pairs"])
@@ -99,7 +104,9 @@ def main() -> None:
                     select_engine(frame, label)
                     verify_method_details(frame, label)
                     verify_result(frame, label, known_pair=label in ("Linear SVM", "Soft Voting"))
-                    print(f"{clip.name}, {label}: explanation, metrics, and three key pairs.", flush=True)
+                    if clip == mp3 and label == "Linear SVM":
+                        frame.locator(".studio-method-overview").screenshot(path=evidence / "linear-svm-diagram.png")
+                    print(f"{clip.name}, {label}: explanation, diagram, metrics, and three key pairs.", flush=True)
                 page.screenshot(path=evidence / f"upload-{clip.suffix[1:]}.png")
                 frame.get_by_role("button", name=f"Remove {clip.name}").click()
                 expect(frame.locator(".studio-reading")).to_have_count(0)

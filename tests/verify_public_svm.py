@@ -52,13 +52,37 @@ def verify_method_details(frame, label: str) -> None:
     expect(figure.locator("figcaption")).to_have_text(re.compile(r"\S"))
     metrics = BENCHMARK["methods"][method]
     table = explanation.get_by_role("table", name="Held-out key prediction results")
-    expect(table.locator("thead th")).to_have_text(["Guesses", "Accuracy", "Recall", "Precision"])
+    for heading in ("Guesses", "Accuracy", "Recall", "Precision"):
+        expect(table.get_by_role("columnheader", name=heading, exact=True)).to_have_count(1)
     expect(table.locator("tbody th")).to_have_text(["First exact key", "Top 3 exact keys", "Top 3 key pairs"])
     expected = []
     for name in ("first_exact", "top3_exact", "top3_pairs"):
         row = metrics[name]
         expected.extend(f"{value:.1%}" for value in (row["correct"] / BENCHMARK["clips"], row["recall"], row["precision"]))
     expect(table.locator("td")).to_have_text(expected)
+
+
+def verify_metric_tooltips(frame) -> None:
+    table = frame.get_by_role("table", name="Held-out key prediction results")
+    guesses = table.get_by_role("columnheader", name="Guesses", exact=True)
+    for label, denominator in (
+        ("Accuracy", "all test clips"),
+        ("Recall", "test clips labeled with it"),
+        ("Precision", "all guesses for it"),
+    ):
+        header = table.get_by_role("columnheader", name=label, exact=True)
+        icon = header.get_by_role("img", name=f"How {label.lower()} is calculated")
+        bubble = header.locator('[role="tooltip"]')
+        expect(bubble).to_be_hidden()
+        icon.hover()
+        expect(bubble).to_be_visible()
+        expect(bubble).to_contain_text(denominator)
+        guesses.hover()
+        expect(bubble).to_be_hidden()
+        icon.focus()
+        expect(bubble).to_be_visible()
+        icon.blur()
+        expect(bubble).to_be_hidden()
 
 
 def main() -> None:
@@ -97,6 +121,10 @@ def main() -> None:
             engine.press("Escape")
             expect(engine).to_have_value("Neural Network")
             print("The signed-out engine selector opens with the keyboard and does not accept text.", flush=True)
+            verify_metric_tooltips(frame)
+            frame.get_by_role("img", name="How precision is calculated").hover()
+            page.screenshot(path=evidence / "metric-tooltip.png")
+            print("All three benchmark definitions appear on hover and keyboard focus.", flush=True)
             expect(frame.get_by_role("button", name="Analyze", exact=True)).to_have_count(0)
             for clip in (mp3, mp4):
                 frame.locator('input[type="file"]').set_input_files(clip)

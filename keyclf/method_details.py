@@ -72,6 +72,37 @@ METHODS = {
 _BENCHMARK = json.loads(Path(__file__).with_name("method_benchmarks.json").read_text(encoding="utf-8"))
 
 
+
+_METRIC_DEFINITIONS = {
+    "Accuracy": (
+        "Test clips with a correct guess in this row ÷ all test clips. "
+        "For a top-three row, any of the three guesses can count as correct."
+    ),
+    "Recall": (
+        "For each key or pair, correct guesses ÷ test clips labeled with it. "
+        "The table averages those rates across 24 keys or 12 pairs."
+    ),
+    "Precision": (
+        "For each key or pair, correct guesses ÷ all guesses for it. "
+        "The table averages those rates across 24 keys or 12 pairs. "
+        "A key or pair that was never guessed counts as zero."
+    ),
+}
+
+
+def _metric_heading(label: str, definition: str) -> str:
+    description = f"benchmark-{label.lower()}-definition"
+    return f"""<th scope="col" aria-label="{label}">
+      <span class="studio-metric-heading">{label}
+        <span class="studio-metric-tip">
+          <span class="studio-metric-info" tabindex="0" role="img"
+                aria-label="How {label.lower()} is calculated" aria-describedby="{description}">i</span>
+          <span class="studio-metric-tooltip" id="{description}" role="tooltip">{definition}</span>
+        </span>
+      </span>
+    </th>"""
+
+
 def render_method_details(engine: str) -> str:
     """Render the selected method's explanation and benchmark table."""
     method, first, second = METHODS[engine]
@@ -99,16 +130,14 @@ def render_method_details(engine: str) -> str:
         {render_method_diagram(method)}
       </div>
       <table class="studio-benchmark" aria-label="Held-out key prediction results">
-        <thead><tr><th scope="col">Guesses</th><th scope="col">Accuracy</th>
-        <th scope="col">Recall</th><th scope="col">Precision</th></tr></thead>
+        <thead><tr><th scope="col">Guesses</th>
+          {"".join(_metric_heading(label, definition) for label, definition in _METRIC_DEFINITIONS.items())}
+        </tr></thead>
         <tbody>{"".join(rows)}</tbody>
       </table>
       <p class="studio-benchmark-note">
         Scored on {_BENCHMARK["clips"]} held-out clips
         ({_BENCHMARK["datasets"]["FMAK"]} FMAK and {_BENCHMARK["datasets"]["GiantSteps"]} GiantSteps).
-        Accuracy counts a clip as correct if any of the listed guesses matches.
-        Precision measures how often a guess for a key is right, and recall measures how often
-        the method finds that key when it is present. Each key or pair gets equal weight.
         The key-pair row matches the app’s display, where C major and A minor count as one guess.
       </p>
     </section>"""

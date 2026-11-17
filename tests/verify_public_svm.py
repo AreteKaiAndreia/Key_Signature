@@ -45,9 +45,14 @@ def verify_method_details(frame, label: str) -> None:
     explanation = frame.get_by_role("region", name=f"How {label} works")
     expect(explanation.locator(".studio-method-copy p")).to_have_count(2)
     metrics = BENCHMARK["methods"][METHODS[label]]
-    expected = [metrics["correct"] / BENCHMARK["clips"], metrics["recall"], metrics["precision"]]
-    expect(explanation.locator("dt")).to_have_text(["Accuracy", "Recall", "Precision"])
-    expect(explanation.locator("dd")).to_have_text([f"{value:.1%}" for value in expected])
+    table = explanation.get_by_role("table", name="Held-out key prediction results")
+    expect(table.locator("thead th")).to_have_text(["Guesses", "Accuracy", "Recall", "Precision"])
+    expect(table.locator("tbody th")).to_have_text(["First exact key", "Top 3 exact keys", "Top 3 key pairs"])
+    expected = []
+    for name in ("first_exact", "top3_exact", "top3_pairs"):
+        row = metrics[name]
+        expected.extend(f"{value:.1%}" for value in (row["correct"] / BENCHMARK["clips"], row["recall"], row["precision"]))
+    expect(table.locator("td")).to_have_text(expected)
 
 
 def main() -> None:
@@ -72,7 +77,14 @@ def main() -> None:
             frame = page.frame_locator('iframe[title="streamlitApp"]')
             engine = frame.get_by_role("combobox", name="Prediction engine")
             expect(engine).to_have_value("Neural Network", timeout=60_000)
-            print("Signed-out visitor starts with Neural Network.", flush=True)
+            expect(engine).to_have_attribute("inputmode", "none")
+            engine.press("ArrowDown")
+            expect(frame.get_by_role("option")).to_have_count(len(METHODS))
+            engine.press("x")
+            expect(frame.get_by_role("option")).to_have_count(len(METHODS))
+            engine.press("Escape")
+            expect(engine).to_have_value("Neural Network")
+            print("The signed-out engine selector opens with the keyboard and does not accept text.", flush=True)
             expect(frame.get_by_role("button", name="Analyze", exact=True)).to_have_count(0)
             for clip in (mp3, mp4):
                 frame.locator('input[type="file"]').set_input_files(clip)

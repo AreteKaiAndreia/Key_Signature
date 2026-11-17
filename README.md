@@ -65,8 +65,9 @@ updates the chroma chart and the selected engine ranks three relative-key
 pairs from short audio samples. C major and A minor share one result.
 The selector offers Neural Network (default), Linear SVM, Random Forest,
 Gradient Boosting, Essentia, and Soft Voting. The selected method shows
-an explanation and its first-guess accuracy, macro recall, and macro precision
-on the same 166 held-out clips.
+an explanation and its accuracy, macro recall, and macro precision for the
+first exact key, top three exact keys, and top three relative key pairs on the
+same 166 held-out clips.
 The neural network learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
 original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).

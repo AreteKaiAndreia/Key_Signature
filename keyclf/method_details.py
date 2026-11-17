@@ -71,26 +71,39 @@ _BENCHMARK = json.loads(Path(__file__).with_name("method_benchmarks.json").read_
 
 
 def render_method_details(engine: str) -> str:
-    """Render the selected method's explanation and exact-key benchmark."""
+    """Render the selected method's explanation and benchmark table."""
     method, first, second = METHODS[engine]
-    result = _BENCHMARK["methods"][method]
-    accuracy = result["correct"] / _BENCHMARK["clips"]
-    metrics = "".join(
-        f'<div><dt>{label}</dt><dd class="studio-measure">{value:.1%}</dd></div>'
-        for label, value in (("Accuracy", accuracy), ("Recall", result["recall"]), ("Precision", result["precision"]))
-    )
+    results = _BENCHMARK["methods"][method]
+    rows = []
+    for name, label in (
+        ("first_exact", "First exact key"),
+        ("top3_exact", "Top 3 exact keys"),
+        ("top3_pairs", "Top 3 key pairs"),
+    ):
+        row = results[name]
+        accuracy = row["correct"] / _BENCHMARK["clips"]
+        rows.append(
+            f'<tr><th scope="row">{label}</th><td class="studio-measure">{accuracy:.1%}</td>'
+            f'<td class="studio-measure">{row["recall"]:.1%}</td>'
+            f'<td class="studio-measure">{row["precision"]:.1%}</td></tr>'
+        )
     return f"""<section class="studio-method" aria-labelledby="method-title">
       <h2 class="studio-panel-title" id="method-title">How {escape(engine)} works</h2>
       <div class="studio-method-copy">
         <p>{escape(first)}</p>
         <p>{escape(second)}</p>
       </div>
-      <dl class="studio-benchmark" aria-label="Held-out key prediction results">{metrics}</dl>
+      <table class="studio-benchmark" aria-label="Held-out key prediction results">
+        <thead><tr><th scope="col">Guesses</th><th scope="col">Accuracy</th>
+        <th scope="col">Recall</th><th scope="col">Precision</th></tr></thead>
+        <tbody>{"".join(rows)}</tbody>
+      </table>
       <p class="studio-benchmark-note">
-        Exact first guesses on {_BENCHMARK["clips"]} held-out clips
+        Scored on {_BENCHMARK["clips"]} held-out clips
         ({_BENCHMARK["datasets"]["FMAK"]} FMAK and {_BENCHMARK["datasets"]["GiantSteps"]} GiantSteps).
-        Accuracy is how often the first guess was right. Precision measures how often a guess
-        for a key was right, and recall measures how often the method found that key when it was present.
-        Precision and recall give each of the 24 keys equal weight.
+        Accuracy counts a clip as correct if any of the listed guesses matches.
+        Precision measures how often a guess for a key is right, and recall measures how often
+        the method finds that key when it is present. Each key or pair gets equal weight.
+        The key-pair row matches the app’s display, where C major and A minor count as one guess.
       </p>
     </section>"""

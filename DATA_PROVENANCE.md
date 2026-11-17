@@ -155,8 +155,11 @@ after adjusting each one's scores. The public
 [calibration file](keyclf/soft_vote_calibration.json) contains five scalar
 temperatures fitted on 91 GiantSteps and 75 FMAK validation clips. It
 contains no per-clip data. The [benchmark summary](keyclf/method_benchmarks.json)
-reports aggregate exact first-guess accuracy, macro recall, and macro
-precision on the separate 91 GiantSteps and 75 FMAK test clips. Precision
-assigns zero to a key the method never predicted. To regenerate the
-summary from the local benchmark reports, run
+reports accuracy, macro recall, and macro precision for the first exact
+key, the top three exact keys, and the top three relative key pairs on the
+separate 91 GiantSteps and 75 FMAK test clips. All three rows use the same
+test recordings. Macro averaging gives equal weight to all 24 keys or 12
+relative pairs. Precision assigns zero to a key or pair the method never
+predicted. To regenerate the summary from the local benchmark reports and
+Essentia checkpoints, run
 `python scripts/export_method_benchmarks.py`.

@@ -1,57 +1,114 @@
-"""Publish aggregate first-guess metrics from the local held-out engine comparison."""
+"""Export aggregate first and top-three metrics from the pinned benchmark clips."""
 
-from pathlib import Path
 import json
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from threadpoolctl import threadpool_limits
 
-REPORTS = Path("reports/model-diagnostics")
-OUTPUT = Path("keyclf/method_benchmarks.json")
-METHOD_IDS = {
-    "Neural Network": "neural_network",
-    "Linear SVM": "linear_svm",
-    "Random Forest": "random_forest",
-    "Gradient Boosting": "gradient_boosting",
-    "Essentia": "essentia",
-    "Soft voting (five engines)": "soft_voting",
+from keyclf.fmak import atomic_json
+from keyclf.keys import KEY_NAMES, relative_key
+from keyclf.open_benchmark import FMA_ROOT
+from keyclf.open_ensemble import ENGINES, SoftVotingKeyModel, open_feature_scorers
+from keyclf.open_harmonic_model import benchmark, xy
+from keyclf.open_loops import ROOT
+from keyclf.relative_pairs import rank_relative_pairs
+
+CACHE = Path("data/work/model-diagnostics/essentia")
+PUBLIC = Path("keyclf")
+ESSENTIA_VERSION = "cloud-hpcp-test-v1-essentia-2.1-beta6-dev"
+METHODS = {
+    "current": ("neural_network", "Neural Network"),
+    "linear": ("linear_svm", "Linear SVM"),
+    "forest": ("random_forest", "Random Forest"),
+    "boosting": ("gradient_boosting", "Gradient Boosting"),
+    "essentia": ("essentia", "Essentia"),
+    "ensemble": ("soft_voting", "Soft voting (five engines)"),
 }
+PAIR_BY_KEY = np.array([min(key, relative_key(key)) for key in range(len(KEY_NAMES))])
+
+
+def clip_metrics(truth: np.ndarray, predictions: np.ndarray, classes: int) -> dict:
+    """Measure list hits and macro recall and precision for distinct predictions."""
+    matches = np.any(predictions == truth[:, None], axis=1)
+    true_positives = np.bincount(truth[matches], minlength=classes)
+    predicted = np.bincount(predictions.ravel(), minlength=classes)
+    support = np.bincount(truth, minlength=classes)
+    if np.any(support == 0):
+        raise ValueError("Each benchmark class needs at least one labeled example.")
+    precision = np.divide(true_positives, predicted, out=np.zeros(classes), where=predicted > 0)
+    return {
+        "correct": int(matches.sum()),
+        "recall": round(float(np.mean(true_positives / support)), 9),
+        "precision": round(float(precision.mean()), 9),
+    }
+
+
+def essentia_scores(dataset: str, track_ids, expected_md5) -> np.ndarray:
+    """Read the verified test profiles for the same pinned audio recordings."""
+    rows = []
+    for track_id in track_ids:
+        result = json.loads((CACHE / dataset / f"{track_id}.json").read_text())
+        scores = np.asarray(result["scores"], dtype=float)
+        if (result["version"] != ESSENTIA_VERSION or result["md5"] != expected_md5[track_id]
+                or scores.shape != (len(KEY_NAMES),) or not np.isfinite(scores).all()):
+            raise ValueError(f"Invalid Essentia test checkpoint for {dataset} {track_id}.")
+        rows.append(scores)
+    return np.stack(rows)
 
 
 def main() -> None:
-    """Validate the shared test support and export accuracy, macro recall, and macro precision."""
-    summary = pd.read_csv(REPORTS / "ensemble-comparison.csv")
-    summary = summary.loc[summary.dataset.eq("combined")].set_index("engine")
-    errors = pd.concat([
-        pd.read_csv(REPORTS / "per-key-errors.csv"),
-        pd.read_csv(REPORTS / "ensemble-per-key.csv"),
-    ])
-    errors = errors.loc[errors.dataset.eq("combined")]
-    sizes = {"FMAK": 75, "GiantSteps": 91}
-    total = sum(sizes.values())
+    """Score the frozen engines and check that all hit counts match the earlier report."""
+    benches = benchmark(ROOT)
+    giantsteps = benches["giantsteps"]
+    checksum_dir = Path("data/annotations/giantsteps-key-dataset/md5")
+    checksums = {
+        "giantsteps": {
+            track_id: (checksum_dir / f"{track_id}.LOFI.md5").read_text().split()[0].lower()
+            for track_id in giantsteps.loc[giantsteps.split == "test", "track_id"]
+        },
+        "fmak": pd.read_parquet(FMA_ROOT / "features.parquet").set_index("track_id")["md5"],
+    }
+    model = SoftVotingKeyModel.load(PUBLIC / "soft_vote_calibration.json")
+    scorers = open_feature_scorers()
+    targets, scores_by_engine, sizes = [], {engine: [] for engine in METHODS}, {}
+    with threadpool_limits(limits=2):
+        for dataset, bench in benches.items():
+            rows = bench.loc[bench.split == "test"]
+            features, truth = xy(rows)
+            scores = {engine: predict(features) for engine, predict in scorers.items()}
+            scores["essentia"] = essentia_scores(dataset, rows.track_id, checksums[dataset])
+            scores["ensemble"] = model.scores({engine: scores[engine] for engine in ENGINES})
+            for engine, values in scores.items():
+                scores_by_engine[engine].append(values)
+            targets.append(truth)
+            sizes[dataset] = len(truth)
+    truth = np.concatenate(targets)
+    summary = pd.read_csv("reports/model-diagnostics/ensemble-comparison.csv")
+    prior = summary.loc[summary.dataset.eq("combined")].set_index("engine")
     methods = {}
-    support = None
-    for name, method in METHOD_IDS.items():
-        keys = errors.loc[errors.engine.eq(name)].set_index("key").sort_index()
-        tp, fp, fn, tn = (keys[column] for column in
-                          ("true_positives", "false_positives", "false_negatives", "true_negatives"))
-        actual = tp + fn
-        predicted = tp + fp
-        correct = int(tp.sum())
-        if (len(keys) != 24 or not keys.index.is_unique or actual.min() <= 0 or actual.sum() != total or predicted.sum() != total
-                or not (actual + fp + tn).eq(total).all()
-                or correct != summary.loc[name, "exact_first_hits"] or total != summary.loc[name, "n"]):
-            raise ValueError(f"Inconsistent benchmark counts for {name}.")
-        if support is not None and not support.equals(actual):
-            raise ValueError(f"The true-key counts changed for {name}.")
-        support = actual
-        methods[method] = {
-            "correct": correct,
-            "recall": round(float((tp / actual).mean()), 9),
-            "precision": round(float((tp / predicted.where(predicted > 0)).fillna(0).mean()), 9),
+    for engine, (method, report_name) in METHODS.items():
+        scores = np.concatenate(scores_by_engine[engine])
+        exact = np.argsort(-scores, axis=1, kind="stable")[:, :3]
+        pair_top3 = np.array([
+            [PAIR_BY_KEY[first] for first, _, _ in rank_relative_pairs(row)[:3]]
+            for row in scores
+        ])
+        results = {
+            "first_exact": clip_metrics(truth, exact[:, :1], len(KEY_NAMES)),
+            "top3_exact": clip_metrics(truth, exact, len(KEY_NAMES)),
+            "top3_pairs": clip_metrics(PAIR_BY_KEY[truth], pair_top3, len(KEY_NAMES) // 2),
         }
+        expected = prior.loc[report_name, ["exact_first_hits", "exact_top3_hits", "relative_pairs_top3_hits"]]
+        if [row["correct"] for row in results.values()] != expected.tolist():
+            raise ValueError(f"Frozen benchmark counts changed for {report_name}.")
+        methods[method] = results
 
-    aggregate = {"clips": total, "datasets": sizes, "methods": methods}
-    OUTPUT.write_text(json.dumps(aggregate, indent=2) + "\n", encoding="utf-8")
+    aggregate = {"clips": len(truth),
+                 "datasets": {"FMAK": sizes["fmak"], "GiantSteps": sizes["giantsteps"]},
+                 "methods": methods}
+    atomic_json(PUBLIC / "method_benchmarks.json", aggregate)
 
 
 if __name__ == "__main__":

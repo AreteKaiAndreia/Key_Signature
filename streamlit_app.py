@@ -193,7 +193,7 @@ def main() -> None:
                     clip = st.file_uploader("Upload a track", type=["mp3", "mp4"], label_visibility="collapsed")
                     content, filename = (clip.getvalue(), clip.name) if clip is not None else (b"", "")
                     st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
-            engine = st.selectbox("Prediction engine", engines)
+            engine = st.selectbox("Prediction engine", engines, filter_mode=None)
         readout = output.empty()
     if engine in METHODS:
         st.html(render_method_details(engine))

@@ -177,15 +177,21 @@ button:focus-visible, a:focus-visible, input:focus-visible,
 .studio-method-copy p { margin: 0; }
 .studio-method-copy p + p { margin-top: var(--space-xs); }
 .studio-benchmark {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-xs);
+  width: 100%;
   margin: 0;
-  padding-block: var(--space-xs);
+  border-collapse: collapse;
   border-block: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
 }
-.studio-benchmark dt { color: var(--color-muted); font-size: var(--text-sm); }
-.studio-benchmark dd { color: var(--color-ink); font-size: var(--text-lg); margin: 0; }
+.studio-benchmark :is(th, td) {
+  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-xs) var(--space-2xs);
+  text-align: right;
+}
+.studio-benchmark th:first-child { text-align: left; padding-left: 0; }
+.studio-benchmark thead th { color: var(--color-muted); font-weight: 500; }
+.studio-benchmark tbody th { color: var(--color-ink-2); font-weight: 400; }
+.studio-benchmark td { color: var(--color-ink); }
 .studio-benchmark-note {
   max-width: 70ch;
   margin: var(--space-xs) 0 0;

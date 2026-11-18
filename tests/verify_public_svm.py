@@ -85,6 +85,53 @@ def verify_metric_tooltips(frame) -> None:
         expect(bubble).to_be_hidden()
 
 
+
+def verify_live_readout_persists(frame) -> None:
+    """Observe every update without allowing the last prediction to disappear."""
+    live = frame.get_by_role("region", name="Live key prediction")
+    stability = live.evaluate("""initial => new Promise(resolve => {
+        const engine = initial.dataset.engine;
+        const first = Number(initial.querySelector("[data-preview-duration]").dataset.previewDuration);
+        const seen = new Set([first]);
+        let gaps = 0;
+        let animation;
+        let completed = false;
+        const observer = new MutationObserver(inspect);
+        const timer = setTimeout(finish, 25000);
+
+        function inspect() {
+            const result = document.querySelector(".studio-result");
+            const pair = result?.querySelector(".studio-reading");
+            if (!pair || result.dataset.engine !== engine || result.querySelectorAll(".studio-alternates tr").length !== 2) {
+                gaps++;
+            } else {
+                const css = getComputedStyle(pair);
+                if (css.display === "none" || css.visibility === "hidden" || Number(css.opacity) === 0) gaps++;
+                const duration = Number(result.querySelector("[data-preview-duration]")?.dataset.previewDuration);
+                if (Number.isFinite(duration)) seen.add(duration);
+            }
+            if (seen.size >= 3) finish();
+        }
+        function sampleFrame() {
+            inspect();
+            if (!completed) animation = requestAnimationFrame(sampleFrame);
+        }
+        function finish() {
+            if (completed) return;
+            completed = true;
+            observer.disconnect();
+            cancelAnimationFrame(animation);
+            clearTimeout(timer);
+            resolve({gaps, durations:[...seen]});
+        }
+        observer.observe(document.body, {childList:true, subtree:true});
+        animation = requestAnimationFrame(sampleFrame);
+    })""")
+    assert stability["gaps"] == 0, stability
+    assert len(stability["durations"]) >= 3, stability
+    print(f"Live result stayed visible through three audio snapshots: {stability['durations']}.", flush=True)
+
+
 def main() -> None:
     evidence = Path("reports/public-svm-smoke")
     evidence.mkdir(parents=True, exist_ok=True)
@@ -154,6 +201,9 @@ def main() -> None:
                 select_engine(frame, label)
                 verify_method_details(frame, label)
                 verify_result(frame, label, live=True, known_pair=label in ("Linear SVM", "Neural Network", "Soft Voting"))
+                if label == "Neural Network":
+                    verify_live_readout_persists(frame)
+                    page.screenshot(path=evidence / "persistent-live-prediction.png")
                 expect(stop).to_be_enabled()
                 expect(chart).to_be_visible()
                 print(f"{label}: three live pairs while the same recorder is running.", flush=True)

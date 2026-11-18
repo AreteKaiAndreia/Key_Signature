@@ -200,7 +200,7 @@ def main() -> None:
                     content, filename = (clip.getvalue(), clip.name) if clip is not None else (b"", "")
                     st.caption("Audio is sent to this server for analysis. It is not saved or used for training.")
             engine = st.selectbox("Prediction engine", engines, filter_mode=None)
-        readout = output.empty()
+        readout = output
     if engine in METHODS:
         st.html(render_method_details(engine))
     predictions = st.session_state.setdefault("automatic_key_predictions", {})
@@ -210,8 +210,8 @@ def main() -> None:
         predictions.clear()
     research_config = allow_local, model_url, model_sha
     if mic.take_id != st.session_state.get("preview_take"):
-        st.session_state.update(preview_take=mic.take_id, preview_ack="", live_key_result=None,
-                                live_analyzed_frames=0)
+        st.session_state.update(preview_take=mic.take_id, preview_ack="", live_key_predictions={},
+                                live_analyzed_frames=0, live_attempted_key=None)
         st.session_state.pop("live_audio", None)
     if mic.active:
         audio = st.session_state.setdefault("live_audio", LiveAudio())
@@ -220,27 +220,33 @@ def main() -> None:
             audio.append(mic.preview_offset, mic.preview)
             ack = st.session_state["preview_ack"] = mic.token
 
-        live_engine, live_result = st.session_state["live_key_result"] or (None, None)
+        live_predictions = st.session_state.setdefault("live_key_predictions", {})
+        live_result, result_frames = live_predictions.get(engine, (None, 0))
         analyzed = st.session_state.get("live_analyzed_frames", 0)
-        if audio.frames and (audio.frames != analyzed or live_engine != engine):
+        attempted = st.session_state.get("live_attempted_key")
+        if audio.frames and (audio.frames != analyzed or attempted != engine):
             slot = inference_slot()
             if slot.acquire(blocking=False):
                 try:
-                    live_result, _ = score_clip(audio.wav(), "recording.wav", engine, True, research_config)
-                    live_engine, analyzed = engine, audio.frames
-                    st.session_state["live_key_result"] = (live_engine, live_result)
-                    st.session_state["live_analyzed_frames"] = analyzed
+                    candidate, _ = score_clip(audio.wav(), "recording.wav", engine, True, research_config)
+                    if candidate is not None:
+                        live_result, result_frames = candidate, audio.frames
+                        live_predictions[engine] = (live_result, result_frames)
+                    st.session_state["live_attempted_key"] = engine
+                    st.session_state["live_analyzed_frames"] = audio.frames
                 finally:
                     slot.release()
-        if live_result and live_engine == engine:
+        if live_result is not None:
             readout.html(render_readout("live", live_result, engine=engine, ack=ack,
-                                        preview_frames=audio.frames, analyzed_frames=analyzed))
+                                        preview_frames=audio.frames, analyzed_frames=result_frames))
         else:
             readout.html(render_readout("listening", message="Listening for clear musical notes…", engine=engine,
                                         ack=ack, preview_frames=audio.frames))
     elif content:
         if engine not in predictions:
-            readout.html(render_readout("loading", engine=engine))
+            if not recording:
+                readout = output.empty()
+                readout.html(render_readout("loading", engine=engine))
             with inference_slot():
                 predictions[engine] = score_clip(content, filename, engine, recording, research_config)
         result, error = predictions[engine]

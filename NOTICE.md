@@ -28,3 +28,8 @@ and [FFmpeg repository](https://git.ffmpeg.org/ffmpeg.git).
 
 Neither code license grants rights to upstream audio, labels, feature caches, or
 trained artifacts. See [DATA_PROVENANCE.md](DATA_PROVENANCE.md).
+
+The unmodified Geist and IBM Plex Mono fonts are bundled under the SIL Open
+Font License 1.1. Their copyright, license, and exact download sources are in
+[`keyclf/fonts/`](keyclf/fonts/). They retain their original family names and
+weights and are excluded from the original code's MIT grant.

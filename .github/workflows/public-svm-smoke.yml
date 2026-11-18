@@ -17,8 +17,7 @@ jobs:
           python-version: '3.11'
       - name: Install browser test dependencies
         run: |
-          python -m pip install playwright==1.65.2
-          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+          python -m pip install playwright==1.65.2 imageio-ffmpeg==0.8.1
       - name: Verify method details, uploads, and live predictions
         run: python tests/verify_public_svm.py
       - name: Save browser screenshots

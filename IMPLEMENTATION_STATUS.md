@@ -78,13 +78,31 @@ This is the durable resume ledger for the key-signature classifier.
   executable and pins PyArrow 24 directly. No supported format is removed.
 - Packaged decoding passed WAV/MP3/MP4 tests with an empty system PATH;
   12 decoder/engine checks and 15 decoder/pipeline/gate checks passed.
-  Cloud dependency follow-up is awaiting publication and public verification.
-  A precise fresh-client visit from this machine was 4,433.7 ms, still above
-  the warm target. Do not mark the complete performance request accepted yet.
-- Last successful command: `python -m pytest tests/test_browser_startup_probe.py -q`.
-- Exact next action: push the dependency/probe follow-up, then run
-  `gh run list --workflow startup-performance.yml --limit 1`. Verify the
-  hosted budgets and six-engine browser smoke before marking this task complete.
+  Published the dependency/probe follow-up in `14c6626`. Its Linux startup
+  job passed at 1,088.0 ms warm, 1,905.4 ms cold, and 425.1 ms maximum call.
+  Its public job correctly failed at a 4,291.3 ms warm median. The seven-visit
+  check from this machine measured 4,299.8 ms. The official embedded route
+  with its toolbar retained measured 3,087.2 ms in seven diagnostic visits.
+  No URL or budget was changed to conceal these misses.
+- Bundled the exact original Geist and IBM Plex Mono font families, including
+  all supplied Unicode ranges and SIL OFL notices, and enabled WebSocket
+  compression. This removes external font CSS/file requests while preserving
+  the design. Local startup remained within budget: 345.4 ms warm median,
+  889.4 ms worst cold, 167.1 ms maximum app call. Artifact:
+  `reports/startup/after-fonts-local.json`.
+- The clean font build passed Chrome checks for both loaded font families,
+  phone/desktop inputs, all six MP3 and live engines, SVM/Soft Voting MP4,
+  persistent cumulative predictions, and automatic final recording analysis.
+  Screenshots are under `/tmp/keyclf-startup-fonts/reports/public-svm-smoke/`.
+- The earlier public browser run stalled installing system FFmpeg on its
+  runner; it is superseded by a run using the same packaged executable as the
+  app to generate fixtures. Do not count that installation stall as a passed
+  functional check.
+- Last successful command: `KEYCLF_TEST_APP_URL=http://127.0.0.1:8558/ python tests/verify_public_svm.py` in the clean font build.
+- Exact next action: publish the font/compression update, run
+  `gh run list --workflow startup-performance.yml --limit 1`, and dispatch
+  `gh workflow run public-svm-smoke.yml --ref main` after deployment.
+  Do not mark the complete performance request accepted until public budgets pass.
 
 ### Top-three benchmarks and engine selector — 2026-11-16
 

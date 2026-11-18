@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from playwright.sync_api import expect, sync_playwright
+from imageio_ffmpeg import get_ffmpeg_exe
 
 APP = "https://musickeyanalyzer.streamlit.app/"
 METHODS = {
@@ -22,7 +23,7 @@ BENCHMARK = json.loads(Path("keyclf/method_benchmarks.json").read_text())
 
 
 def ffmpeg(*args: str) -> None:
-    subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", *args], check=True)
+    subprocess.run([get_ffmpeg_exe(), "-nostdin", "-loglevel", "error", *args], check=True)
 
 
 def verify_result(frame, engine: str, *, live: bool = False, known_pair: bool = True) -> None:
@@ -84,6 +85,19 @@ def verify_metric_tooltips(frame) -> None:
         icon.blur()
         expect(bubble).to_be_hidden()
 
+
+
+def verify_bundled_fonts(frame) -> None:
+    status = frame.locator(".studio-header").evaluate("""async () => {
+      await document.fonts.ready;
+      return {
+        loaded:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family.replaceAll('"','').replaceAll("'",'')),
+        embedded:[...document.querySelectorAll('style')].some(s=>s.textContent.includes('data:font/woff2;base64,')),
+        family:getComputedStyle(document.querySelector('.studio-title')).fontFamily
+      };
+    }""")
+    assert status["embedded"] and "Geist" in status["family"], status
+    assert {"Geist", "IBM Plex Mono"} <= set(status["loaded"]), status
 
 
 def verify_live_readout_persists(frame) -> None:
@@ -160,6 +174,13 @@ def main() -> None:
             frame = page.frame_locator('iframe[title="streamlitApp"]') if app_url == APP else page
             engine = frame.get_by_role("combobox", name="Prediction engine")
             expect(engine).to_have_value("Neural Network", timeout=60_000)
+            verify_bundled_fonts(frame)
+            page.set_viewport_size({"width": 390, "height": 844})
+            expect(frame.locator('[data-testid="stFileUploaderDropzone"]')).to_be_visible()
+            expect(engine).to_be_visible()
+            page.screenshot(path=evidence / "phone-upload.png")
+            page.set_viewport_size({"width": 1280, "height": 840})
+            print("The original Geist and IBM Plex Mono fonts load from bundled data; phone and desktop inputs remain available.", flush=True)
             expect(engine).to_have_attribute("inputmode", "none")
             engine.press("ArrowDown")
             expect(frame.get_by_role("option")).to_have_count(len(METHODS))

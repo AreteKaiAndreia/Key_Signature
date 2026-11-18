@@ -68,7 +68,10 @@ retained in the CI artifact. The profiler is disabled in the public app.
 
 All six methods, descriptions, diagrams, metrics, uploads, and cumulative live
 recording remain enabled. Audio and model libraries load on the first analysis;
-the initial page uses lightweight display modules. Reproduce with:
+the initial page uses lightweight display modules. The original Geist and IBM
+Plex Mono font files ship with their SIL OFL notices and are inlined once per
+process to avoid Google Fonts round trips. WebSocket compression reduces the
+initial page payload. Reproduce with:
 
 ```bash
 python -m pip install -r requirements.txt playwright==1.65.2

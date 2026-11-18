@@ -4,7 +4,7 @@
 /* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V4 · weakest: P, made the working input and readout the entire page */
 /* Hallmark · finish-review: in-thread · shortened selector labels to fit the phone view and tightened the empty readout */
 /* Hallmark · dropped react-aria6623841877-:r6: · Streamlit replaces its generated radio group name per page load. Both audio sources remain. */
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("./fonts/fonts.css");
 @import url("./tokens.css");
 
 html, body { overflow-x: clip; }

@@ -132,6 +132,16 @@ This is the durable resume ledger for the key-signature classifier.
   view with bulk font inlining. Artifact: `reports/startup/hosted-embed-cssfonts.json`.
   The earlier 3,087.2 ms diagnostic used a different embed option set, so do not
   attribute that difference solely to fonts. Neither view meets the public limit.
+- One isolated SDK alternative was assessed after the handoff measurements.
+  The same source, machine, Chrome, 3 cold/7 warm samples, and other dependency
+  versions compared Streamlit 1.66.1 with 1.67.0. Warm median changed from
+  330.1 to 313.4 ms; worst cold changed from 993.1 to 1,006.5 ms; maximum app
+  call changed from 171.4 to 178.0 ms. Initial script/style requests increased
+  from 34 / 865,862 encoded bytes to 35 / 904,376 bytes. This does not close
+  the public gap, so the deployed 1.66.1 lock was retained. Artifacts are
+  `reports/startup/sdk166-control.json`, `sdk167-candidate.json`, and
+  `sdk166-assets.json` / `sdk167-assets.json`. The isolated environment is
+  `/tmp/keyclf-streamlit167/`; the baseline environment was not modified.
 - Current performance state: **not accepted**. Community Cloud is retained per
   the owner's explicit choice. Source and functional checks pass; managed-page
   delivery remains above the public warm budget. Keep the 3,000/30,000/500 ms

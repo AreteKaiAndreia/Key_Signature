@@ -9,24 +9,15 @@ import os
 from pathlib import Path
 from threading import Lock
 
-import requests
 import streamlit as st
 
-from keyclf.cloud_audio import SAMPLE_RATE, decode_clip
-from keyclf.cloud_engines import custom_scores, essentia_scores, local_model, released_model
+from keyclf.audio_settings import SAMPLE_RATE
 from keyclf.keys import PITCH_NAMES, key_name
 from keyclf.method_details import (
     BOOSTING, FOREST, KS, LINEAR_SVM, METHODS, OPEN_ML, SOFT_VOTE, render_method_details,
 )
-from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
-from keyclf.open_candidate import CandidateKeyModel
-from keyclf.open_ensemble import SoftVotingKeyModel
-from keyclf.open_linear_svm import LinearKeySVM
-from keyclf.open_tree_models import load_tree_models, tree_scores
-from keyclf.relative_pairs import rank_relative_pairs
 from keyclf.studio import STUDIO_HEADER, studio_css
 from keyclf.streaming_recorder import LiveAudio, Recording, record_soundbite
-from threadpoolctl import threadpool_limits
 
 ML = "Research ML (random forest)"
 TREE_ENGINES = {FOREST: "forest", BOOSTING: "boosting"}
@@ -44,6 +35,8 @@ def inference_slot() -> Lock:
 @st.cache_resource(show_spinner=False)
 def get_model(url: str, sha256: str, allow_local: bool, revision: int):
     """Load one verified model per server or one explicitly enabled local model."""
+    from keyclf.cloud_engines import local_model, released_model
+
     if url or sha256:
         return released_model(url, sha256)
     if allow_local:
@@ -52,30 +45,47 @@ def get_model(url: str, sha256: str, allow_local: bool, revision: int):
 
 
 @st.cache_resource(show_spinner=False)
-def get_open_model() -> CandidateKeyModel:
+def get_open_model():
+    from keyclf.open_candidate import CandidateKeyModel
+
     return CandidateKeyModel.load(OPEN_ARTIFACT)
 
 
 @st.cache_resource(show_spinner=False)
-def get_linear_svm() -> LinearKeySVM:
+def get_linear_svm():
     """Cache the published SVM coefficients for the hosted app."""
+    from keyclf.open_linear_svm import LinearKeySVM
+
     return LinearKeySVM.load()
 
 
 @st.cache_resource(show_spinner=False)
 def get_tree_models() -> dict:
     """Cache the verified set of public tree models."""
+    from keyclf.open_tree_models import load_tree_models
+
     return load_tree_models()
 
 
 @st.cache_resource(show_spinner=False)
-def get_ensemble() -> SoftVotingKeyModel:
+def get_ensemble():
     """Load the voting calibration shipped with the public engines."""
+    from keyclf.open_ensemble import SoftVotingKeyModel
+
     return SoftVotingKeyModel.load(OPEN_ARTIFACT.with_name("soft_vote_calibration.json"))
 
 
 def score_clip(content, filename, engine, recording, research_config):
     """Apply the selected engine to either a preview or a complete clip."""
+    import requests
+    from threadpoolctl import threadpool_limits
+
+    from keyclf.cloud_audio import decode_clip
+    from keyclf.cloud_engines import custom_scores, essentia_scores
+    from keyclf.microphone import MIN_CHROMA_SPREAD, NO_SIGNAL, clean_recording
+    from keyclf.open_tree_models import tree_scores
+    from keyclf.relative_pairs import rank_relative_pairs
+
     try:
         samples, clipped = decode_clip(content, filename)
         if recording:

@@ -26,6 +26,55 @@ python -m pip install -r requirements.txt
 python -m streamlit run streamlit_app.py
 ```
 
+## Startup performance gate
+
+Every push and pull request runs `.github/workflows/startup-performance.yml`.
+It benchmarks the previous source and current source on the same Linux runner,
+with the deployed Python 3.11 dependency lock and Chrome. CI logs and its job
+summary include before, after, signed delta, and limit for each measure.
+The build fails when any current value reaches its limit:
+
+| Measure | Required |
+|---|---:|
+| Median warm URL-to-widget load, 7 visits | < 3,000 ms |
+| Worst cold URL-to-widget load, 3 fresh processes | < 30,000 ms |
+| Longest individual startup operation | < 500 ms |
+
+A second job checks seven fresh signed-out visits to the actual public Cloud
+URL and fails if its median reaches 3 seconds or a browser startup Long Task
+reaches 500 ms. It logs deltas against the previous retained hosted report when
+available. Cloud redeployment is asynchronous, so this checks public availability
+and latency while the local source test checks the exact commit under review.
+
+The clock starts immediately before browser navigation. A cold request launches
+a fresh Streamlit process. It stops after the default engine selector and upload
+control are visible and two browser animation frames have painted. Warm visits
+reuse that server with fresh browser contexts. Dependency installation and
+Chrome launch occur before the timer. This process-start test does not measure
+Community Cloud's container provisioning or dependency installation.
+
+The opt-in server profiler records the maximum wall time of **each invocation**,
+including nested work, imports, the app module, and `main`. Browser Long Tasks
+are measured through widget paint. Upload decoding and inference are outside
+this startup-only budget. Full function profiles, samples, and server logs are
+retained in the CI artifact. The profiler is disabled in the public app.
+
+All six methods, descriptions, diagrams, metrics, uploads, and cumulative live
+recording remain enabled. Audio and model libraries load on the first analysis;
+the initial page uses lightweight display modules. Reproduce with:
+
+```bash
+python -m pip install -r requirements.txt playwright==1.65.2
+python scripts/benchmark_startup.py --output reports/startup/local.json
+python scripts/benchmark_startup.py --url https://musickeyanalyzer.streamlit.app/ \
+  --output reports/startup/hosted.json
+```
+
+Chrome must be installed. Use a fresh output path for each local run. Hosted
+measurements include the Community Cloud wrapper and actual upload widget.
+They do not assert that a remote server is cold unless its restart or wake
+was independently observed. The local and hosted timings are recorded separately.
+
 ## Optional research forest
 
 From the repository root, after the local feature caches and the deployment

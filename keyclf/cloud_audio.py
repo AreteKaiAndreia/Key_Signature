@@ -9,9 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-SAMPLE_RATE = 22050
-MAX_BYTES = 50 * 1024**2
-MAX_SECONDS = 120
+from .audio_settings import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
 FORMATS = {".wav": "wav", ".mp3": "mp3", ".mp4": "mov"}
 
 

@@ -1,0 +1,105 @@
+name: Startup performance
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: startup-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  startup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install the deployed dependency lock and browser driver
+        run: python -m pip install -r requirements.txt playwright==1.65.2 pytest
+      - name: Verify the performance gate itself
+        run: python -m pytest tests/test_startup_performance.py -q
+      - name: Prepare the previous source on this runner
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            BASE_SHA=$(git rev-parse HEAD^)
+          fi
+          git worktree add --detach "$RUNNER_TEMP/startup-before" "$BASE_SHA"
+          mkdir -p reports/startup
+          git rev-parse HEAD > reports/startup/after-commit.txt
+          git -C "$RUNNER_TEMP/startup-before" rev-parse HEAD > reports/startup/before-commit.txt
+      - name: Measure before using identical dependencies and browser
+        id: before
+        continue-on-error: true
+        run: |
+          python scripts/benchmark_startup.py --source "$RUNNER_TEMP/startup-before" \
+            --output reports/startup/before.json --report-only
+      - name: Enforce URL-to-widget and individual startup operation budgets
+        run: |
+          comparison=()
+          if [ -f reports/startup/before.json ]; then
+            comparison=(--compare reports/startup/before.json)
+          else
+            echo '::warning::Previous source failed to render; inspect its saved logs. No before value is fabricated.'
+          fi
+          python scripts/benchmark_startup.py --output reports/startup/after.json "${comparison[@]}"
+      - name: Retain measurements and full function profiles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-performance
+          path: reports/startup/
+          if-no-files-found: warn
+
+  hosted-warm:
+    needs: startup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install browser driver
+        run: python -m pip install playwright==1.65.2
+      - name: Read the previous hosted measurement when available
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p reports/startup
+          artifact_url=$(gh api "repos/$REPOSITORY/actions/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.name == "public-startup" and .expired == false)][0].archive_download_url // empty')
+          if [ -n "$artifact_url" ]; then
+            gh api "$artifact_url" > "$RUNNER_TEMP/public-startup.zip"
+            python -c 'import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); open("reports/startup/hosted-before.json","wb").write(z.read("hosted.json"))' "$RUNNER_TEMP/public-startup.zip"
+          fi
+      - name: Enforce the publicly accessible warm URL-to-widget budget
+        run: |
+          comparison=()
+          if [ -f reports/startup/hosted-before.json ]; then
+            comparison=(--compare reports/startup/hosted-before.json)
+          fi
+          python scripts/benchmark_startup.py --url https://musickeyanalyzer.streamlit.app/ \
+            --output reports/startup/hosted.json "${comparison[@]}"
+      - name: Retain hosted browser samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-startup
+          path: reports/startup/hosted.json

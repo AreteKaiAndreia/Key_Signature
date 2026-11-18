@@ -1,6 +1,6 @@
 """Illustrations of how the public key prediction engines reach a score."""
 
-from .baseline import KK_MAJOR
+from .key_profiles import MAJOR_PROFILE
 
 _ARROW = '<span class="diagram-arrow" aria-hidden="true">→</span>'
 
@@ -70,7 +70,7 @@ def _forest() -> str:
 
 def _pitch_profiles() -> str:
     """Compare an example clip profile with two actual major-key templates."""
-    major = tuple(KK_MAJOR)
+    major = MAJOR_PROFILE
     profiles = (
         ("Example clip", (8, 1, 3, 1, 6, 2, 1, 7, 1, 2, 1, 1), "clip", ""),
         ("C major template", major, "match", "Closer match"),

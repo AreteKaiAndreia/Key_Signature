@@ -34,6 +34,41 @@ This is the durable resume ledger for the key-signature classifier.
 
 ## Current checkpoint
 
+### Startup performance — 2026-11-18
+
+- Scope confirmed by the owner: URL hit through first widget paint. The
+  500 ms operation ceiling covers startup; upload decoding and inference are
+  outside that ceiling. All six public methods and the existing UI are retained.
+- Removed eager audio/ML imports from the public entry point and moved shared
+  constants and diagram profiles into lightweight modules. Analysis still uses
+  the same extractors and estimators when audio is supplied.
+- Before source: `c5e5a9f`. Local browser measurements were 424.9 ms warm
+  median, 5,459.7 ms worst cold, and 4,677.6 ms longest app-script call.
+  After measurements were 328.6 ms, 828.0 ms, and 165.3 ms respectively.
+  Both runs used 3 cold/7 warm visits with the exact browser paint marker.
+- Evidence: local `reports/startup/before-precise.json`, `after-precise.json`,
+  individual call profiles, and browser/server logs. Six gate tests passed;
+  harness self-tests passed 87 with one optional skip. Clean-source regression
+  passed 161 tests with four data/optional skips. Chrome verified all six
+  engines on MP3 uploads and live recording, SVM and Soft Voting on MP4,
+  cumulative snapshots and persistent predictions, automatic final analysis,
+  diagrams, metrics, and keyboard/hover tooltips. Linux CI is pending.
+- Added `startup-performance.yml`: benchmark previous/current source on the
+  same Linux runner, print all before/after/delta values, save complete profiles,
+  and fail at 3,000 ms warm median, 30,000 ms worst cold, or 500 ms per operation.
+  A second job gates fresh signed-out visits to the public URL and retains
+  hosted samples across runs, including before/after deltas when available.
+- Public-before median with fresh signed-out browser contexts was 4,630.1 ms,
+  including Cloud's wrapper and authentication redirects (polling-based timer).
+  This misses the warm target. Deployment and precise public-after measurements
+  remain pending; local process-start results do not establish Cloud
+  provisioning latency. The follow-up public check encountered a loading stall.
+- Last successful command: `python scripts/benchmark_startup.py --source /tmp/keyclf-startup-final --output reports/startup/after-precise.json --compare reports/startup/before-precise.json`.
+  Source changes are awaiting the commit containing this ledger.
+- Exact next action: commit and push the staged startup changes, then
+  `gh run list --workflow startup-performance.yml --limit 1`. Verify the
+  public deployment and record hosted timing before marking this task complete.
+
 ### Top-three benchmarks and engine selector — 2026-11-16
 
 - Deployed from `d3d3281`. Accuracy, macro precision, and macro recall now

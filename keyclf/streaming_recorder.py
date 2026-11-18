@@ -12,7 +12,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from .cloud_audio import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
+from .audio_settings import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
 from .keys import PITCH_NAMES
 
 PREVIEW_SECONDS = 3

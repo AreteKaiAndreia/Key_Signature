@@ -92,11 +92,11 @@ def verify_bundled_fonts(frame) -> None:
       await document.fonts.ready;
       return {
         loaded:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family.replaceAll('"','').replaceAll("'",'')),
-        embedded:[...document.querySelectorAll('style')].some(s=>s.textContent.includes('data:font/woff2;base64,')),
+        definitions:[...document.querySelectorAll('style')].some(s=>s.textContent.includes("font-family: 'Geist'") && s.textContent.includes('https://fonts.gstatic.com/')),
         family:getComputedStyle(document.querySelector('.studio-title')).fontFamily
       };
     }""")
-    assert status["embedded"] and "Geist" in status["family"], status
+    assert status["definitions"] and "Geist" in status["family"], status
     assert {"Geist", "IBM Plex Mono"} <= set(status["loaded"]), status
 
 
@@ -180,7 +180,7 @@ def main() -> None:
             expect(engine).to_be_visible()
             page.screenshot(path=evidence / "phone-upload.png")
             page.set_viewport_size({"width": 1280, "height": 840})
-            print("The original Geist and IBM Plex Mono fonts load from bundled data; phone and desktop inputs remain available.", flush=True)
+            print("The original Geist and IBM Plex Mono fonts use shipped definitions and demand-loaded subsets; phone and desktop inputs remain available.", flush=True)
             expect(engine).to_have_attribute("inputmode", "none")
             engine.press("ArrowDown")
             expect(frame.get_by_role("option")).to_have_count(len(METHODS))

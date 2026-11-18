@@ -1,6 +1,5 @@
 """Presentation shared by the local and hosted Streamlit tools."""
 
-from base64 import b64encode
 from functools import cache
 from pathlib import Path
 
@@ -9,13 +8,9 @@ _STYLE_DIR = Path(__file__).resolve().parent
 
 @cache
 def _font_css() -> str:
-    """Keep the original fonts available without third-party network requests."""
+    """Ship font definitions directly and let the browser fetch needed subsets."""
     directory = _STYLE_DIR / "fonts"
-    stylesheet = (directory / "fonts.css").read_text(encoding="utf-8")
-    for font in directory.glob("*.woff2"):
-        encoded = b64encode(font.read_bytes()).decode("ascii")
-        stylesheet = stylesheet.replace(f"url({font.name})", f"url(data:font/woff2;base64,{encoded})")
-    return stylesheet
+    return (directory / "fonts.css").read_text(encoding="utf-8")
 
 
 def studio_css() -> str:

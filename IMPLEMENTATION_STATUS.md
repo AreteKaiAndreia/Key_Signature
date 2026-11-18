@@ -99,10 +99,29 @@ This is the durable resume ledger for the key-signature classifier.
   app to generate fixtures. Do not count that installation stall as a passed
   functional check.
 - Last successful command: `KEYCLF_TEST_APP_URL=http://127.0.0.1:8558/ python tests/verify_public_svm.py` in the clean font build.
-- Exact next action: publish the font/compression update, run
-  `gh run list --workflow startup-performance.yml --limit 1`, and dispatch
-  `gh workflow run public-svm-smoke.yml --ref main` after deployment.
-  Do not mark the complete performance request accepted until public budgets pass.
+- Published `70e6863`. Its Linux gate passed at 984.6 ms warm median,
+  1,569.9 ms worst cold process, and 268.4 ms longest app call. The public
+  [six-engine browser check](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44387272559)
+  passed, including original fonts, phone/desktop inputs, MP3/MP4, all live
+  engines, persistence, cumulative audio, and automatic final analysis.
+- A public navigation during the observed Cloud reboot took 28,067.3 ms.
+  Navigation began 9,352.5 ms after the restart request; restart-to-paint was
+  37,419.8 ms. Preserve both timings. This single observation does not
+  establish a general hibernation-wake guarantee. Local artifact:
+  `reports/startup/hosted-cold-fonts.json` with epoch timestamps.
+- The final bare Cloud URL still measured 4,297.1 ms over seven fresh-client
+  visits. Full font inlining increased the supported embedded-view median
+  from 3,087.2 to 3,603.5 ms. Reject that bulk-transfer approach. The correction
+  ships the font CSS directly and fetches only needed WOFF2 subsets from their
+  pinned upstream URLs, retaining all original families, weights, and ranges.
+  Seven unit/gate checks passed. This correction awaits public measurement.
+- The owner explicitly reconfirmed **keep Streamlit Community Cloud**.
+  No other host is authorized. A diagnostic of the internal direct guest path
+  was unreliable for fresh clients and is not promoted as the public URL.
+- Exact next action: push the font-CSS correction, then run
+  `gh run list --workflow startup-performance.yml --limit 1` and compare the
+  supported embedded view with `reports/startup/hosted-embed-fonts.json`.
+  Keep the public budget failure visible until a complete supported view passes.
 
 ### Top-three benchmarks and engine selector — 2026-11-16
 

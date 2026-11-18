@@ -140,7 +140,8 @@ def browser_load(browser, url: str, *, hosted: bool = False) -> dict:
         widget.press("Escape")
         if errors:
             raise AssertionError(errors)
-        return {"load_ms": elapsed, "observed_ready_ms": observed, **timing}
+        return {"load_ms": elapsed, "started_epoch_ms": start_epoch_ms,
+                "paint_epoch_ms": paint_at, "observed_ready_ms": observed, **timing}
     finally:
         context.close()
 
@@ -228,7 +229,7 @@ def compare(report: dict, before: dict | None, *, enforce: bool = True) -> bool:
     return not failed
 
 
-def run_hosted(url: str, output: Path, runs: int, before: dict | None = None, *, enforce: bool = True) -> None:
+def run_hosted(url: str, output: Path, runs: int, before: dict | None = None, *, enforce: bool = True, direct: bool = False) -> None:
     """Measure a reachable hosted instance without asserting it was restarted."""
     from playwright.sync_api import sync_playwright
 
@@ -238,7 +239,7 @@ def run_hosted(url: str, output: Path, runs: int, before: dict | None = None, *,
             samples = []
             for index in range(runs):
                 try:
-                    samples.append(browser_load(browser, url, hosted=True))
+                    samples.append(browser_load(browser, url, hosted=not direct))
                 except Exception as error:
                     output.parent.mkdir(parents=True, exist_ok=True)
                     output.write_text(json.dumps({"url": url, "samples": samples, "failure": str(error)}, indent=2) + "\n")
@@ -247,9 +248,11 @@ def run_hosted(url: str, output: Path, runs: int, before: dict | None = None, *,
         finally:
             browser.close()
     report = {"url": url, "instance_state": "Not forced cold; server state must be recorded separately",
-              "measurement": "Browser URL hit to painted engine selector and upload control, including Cloud iframe",
+              "measurement": "Browser URL hit to painted engine selector and upload control",
+              "includes_cloud_wrapper": not direct,
               "samples": samples, "median_ms": statistics.median(row["load_ms"] for row in samples),
               "browser_operation_max_ms": max(row["longtask_max_ms"] for row in samples)}
+    report["completed_epoch_ms"] = time.time_ns() / 1e6
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n")
     failed = False
@@ -277,12 +280,13 @@ def main():
     parser.add_argument("--warm-runs", type=int, default=7)
     parser.add_argument("--report-only", action="store_true")
     parser.add_argument("--url", help="Measure the hosted Cloud iframe; does not force a cold server")
+    parser.add_argument("--direct", action="store_true", help="Measure a top-level Streamlit document instead of a Cloud wrapper iframe")
     args = parser.parse_args()
     if min(args.cold_runs, args.warm_runs) < 1:
         parser.error("At least one cold and warm run is required")
     if args.url:
         before = json.loads(args.compare.read_text()) if args.compare else None
-        run_hosted(args.url, args.output.resolve(), args.warm_runs, before, enforce=not args.report_only)
+        run_hosted(args.url, args.output.resolve(), args.warm_runs, before, enforce=not args.report_only, direct=args.direct)
         return
     report = run(args.source.resolve(), args.output.resolve(), args.cold_runs, args.warm_runs)
     before = json.loads(args.compare.read_text()) if args.compare else None

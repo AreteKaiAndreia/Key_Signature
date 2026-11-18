@@ -69,8 +69,10 @@ retained in the CI artifact. The profiler is disabled in the public app.
 All six methods, descriptions, diagrams, metrics, uploads, and cumulative live
 recording remain enabled. Audio and model libraries load on the first analysis;
 the initial page uses lightweight display modules. The original Geist and IBM
-Plex Mono font files ship with their SIL OFL notices and are inlined once per
-process to avoid Google Fonts round trips. WebSocket compression reduces the
+Plex Mono font definitions ship with their SIL OFL notices, avoiding a Google
+Fonts CSS request. Only needed subsets load from their pinned upstream WOFF2
+URLs. Inlining every subset increased hosted load time and was rejected.
+WebSocket compression reduces the
 initial page payload. Reproduce with:
 
 ```bash

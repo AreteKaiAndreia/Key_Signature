@@ -105,24 +105,7 @@ def browser_load(browser, url: str, *, hosted: bool = False) -> dict:
     frame = page.frame_locator('iframe[title="streamlitApp"]') if hosted else page
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
-    page.add_init_script("""window.__startupTasks=[];
-      new PerformanceObserver(list => window.__startupTasks.push(...list.getEntries().map(e=>({start:e.startTime,duration:e.duration}))))
-        .observe({type:'longtask', buffered:true});
-      function ready() {
-        const engine=document.querySelector('input[role="combobox"]');
-        const upload=document.querySelector('[data-testid="stFileUploaderDropzone"]');
-        return engine?.value === 'Neural Network' && engine.getClientRects().length && upload?.getClientRects().length;
-      }
-      function watchPaint() {
-        if (!ready()) { requestAnimationFrame(watchPaint); return; }
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          if (!ready()) { requestAnimationFrame(watchPaint); return; }
-          window.__startupPaintAt=performance.timeOrigin+performance.now();
-          window.__startupPaintEnd=performance.now();
-        }));
-      }
-      requestAnimationFrame(watchPaint);
-    """)
+    page.add_init_script(path=str(PROBE / "paint.js"))
     start_epoch_ms = time.time_ns() / 1e6
     start = time.perf_counter()
     try:

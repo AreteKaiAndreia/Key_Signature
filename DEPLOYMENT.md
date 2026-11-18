@@ -19,12 +19,19 @@ and completes any GitHub connection prompt. See the
 [Streamlit deployment guide](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy)
 and [code license notices](NOTICE.md).
 
-To run the same app locally with Python 3.11 and FFmpeg:
+To run the same app locally with Python 3.11:
 
 ```bash
 python -m pip install -r requirements.txt
 python -m streamlit run streamlit_app.py
 ```
+
+The pinned `imageio-ffmpeg` wheel supplies the upload decoder. Cloud installs
+only `libatomic1` through `packages.txt`; it avoids the system FFmpeg package's
+large recommended graphics/media dependency chain. All supported audio formats
+remain available. Local dataset/training commands can still use system FFmpeg.
+PyArrow is pinned to the version Cloud actually permits, avoiding its automatic
+uninstall of 26.0.0 and second wheel download during provisioning.
 
 ## Startup performance gate
 

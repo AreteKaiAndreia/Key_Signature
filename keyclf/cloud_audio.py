@@ -13,6 +13,13 @@ from .audio_settings import MAX_BYTES, MAX_SECONDS, SAMPLE_RATE
 FORMATS = {".wav": "wav", ".mp3": "mp3", ".mp4": "mov"}
 
 
+def ffmpeg_executable() -> str:
+    """Use the pinned wheel's FFmpeg without a system multimedia installation."""
+    from imageio_ffmpeg import get_ffmpeg_exe
+
+    return get_ffmpeg_exe()
+
+
 def decode_clip(content: bytes, filename: str) -> tuple[np.ndarray, bool]:
     """Decode up to 120 seconds plus one sample to detect truncation."""
     suffix = Path(filename).suffix.lower()
@@ -28,7 +35,7 @@ def decode_clip(content: bytes, filename: str) -> tuple[np.ndarray, bool]:
         upload.flush()
         try:
             decoded = subprocess.run(
-                ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+                [ffmpeg_executable(), "-nostdin", "-hide_banner", "-loglevel", "error",
                  "-protocol_whitelist", "file,pipe", "-f", FORMATS[suffix],
                  "-threads", "1", "-i", upload.name, "-map", "0:a:0", "-vn", "-sn", "-dn",
                  "-af", f"aresample={SAMPLE_RATE},atrim=end_sample={max_samples + 1}",

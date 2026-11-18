@@ -63,11 +63,28 @@ This is the durable resume ledger for the key-signature classifier.
   This misses the warm target. Deployment and precise public-after measurements
   remain pending; local process-start results do not establish Cloud
   provisioning latency. The follow-up public check encountered a loading stall.
-- Last successful command: `python scripts/benchmark_startup.py --source /tmp/keyclf-startup-final --output reports/startup/after-precise.json --compare reports/startup/before-precise.json`.
-  Source changes are awaiting the commit containing this ledger.
-- Exact next action: commit and push the staged startup changes, then
+- Pushed `1684e31`. Linux [startup job](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44381716452/job/135075475389)
+  passed: warm 1,162.2 → 1,030.6 ms, cold 8,948.0 → 1,628.7 ms,
+  maximum individual app call 6,919.2 → 284.0 ms. Raw reports are retained
+  in that run and locally under `/tmp/keyclf-linux-startup-1684e31/`.
+- That run's hosted job failed because its paint marker did not re-arm after
+  Cloud created the initially hidden guest document. Added a DOM/load observer
+  and parent-frame visibility check. A browser regression reproducing a hidden,
+  rewritten guest frame passed. The paint threshold remains unchanged.
+- The first URL navigation during the observed Cloud reboot exceeded 45 seconds
+  while provisioning. Cloud logs showed 253 system packages (192 MB download,
+  704 MB installed) pulled in by FFmpeg, followed by an automatic PyArrow
+  26-to-24 replacement. Follow-up source uses the pinned imageio-ffmpeg 0.8.1
+  executable and pins PyArrow 24 directly. No supported format is removed.
+- Packaged decoding passed WAV/MP3/MP4 tests with an empty system PATH;
+  12 decoder/engine checks and 15 decoder/pipeline/gate checks passed.
+  Cloud dependency follow-up is awaiting publication and public verification.
+  A precise fresh-client visit from this machine was 4,433.7 ms, still above
+  the warm target. Do not mark the complete performance request accepted yet.
+- Last successful command: `python -m pytest tests/test_browser_startup_probe.py -q`.
+- Exact next action: push the dependency/probe follow-up, then run
   `gh run list --workflow startup-performance.yml --limit 1`. Verify the
-  public deployment and record hosted timing before marking this task complete.
+  hosted budgets and six-engine browser smoke before marking this task complete.
 
 ### Top-three benchmarks and engine selector — 2026-11-16
 

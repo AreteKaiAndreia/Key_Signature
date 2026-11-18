@@ -30,7 +30,7 @@ jobs:
       - name: Install the deployed dependency lock and browser driver
         run: python -m pip install -r requirements.txt playwright==1.65.2 pytest
       - name: Verify the performance gate itself
-        run: python -m pytest tests/test_startup_performance.py -q
+        run: python -m pytest tests/test_startup_performance.py tests/test_cloud_decoder.py tests/test_browser_startup_probe.py -q
       - name: Prepare the previous source on this runner
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}

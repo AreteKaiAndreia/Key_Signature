@@ -87,6 +87,32 @@ measurements include the Community Cloud wrapper and actual upload widget.
 They do not assert that a remote server is cold unless its restart or wake
 was independently observed. The local and hosted timings are recorded separately.
 
+### Measured status on 2026-11-18
+
+The app remains on Community Cloud, as requested. Performance acceptance is
+**pending**, even though the same six methods, MP3/MP4 uploads, microphone,
+cumulative predictions, diagrams, metrics, and phone/desktop views passed the
+[public browser check](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44390945747).
+
+| Current measurement | Result | Budget |
+|---|---:|---:|
+| Public URL, warm server / fresh signed-out browser median | 4,020.6 ms | < 3,000 ms, **failed** |
+| Linux CI warm browser median | 1,025.2 ms | < 3,000 ms |
+| Linux CI worst cold process | 1,654.8 ms | < 30,000 ms |
+| Linux CI longest individual app startup call | 289.1 ms | < 500 ms |
+
+The [performance run](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44390025874)
+keeps the public failure visible and retains before/after values and raw profiles.
+A supported embedded view with toolbar and padding retained measured 3,477.8 ms
+in a separate seven-visit diagnostic, so it is not promoted as meeting the target.
+The internal guest path was unreliable for fresh clients and is not the public
+entry point. No view or threshold has been changed to conceal a failing result.
+
+During an observed Cloud reboot, URL navigation took 28,067.3 ms to widget paint.
+It began 9,352.5 ms after the reboot request; total reboot-to-paint was 37,419.8 ms.
+This is one reboot observation, rather than a guarantee for hibernation wakeups.
+Cold process CI measurements do not include the provider's provisioning delay.
+
 ## Optional research forest
 
 From the repository root, after the local feature caches and the deployment

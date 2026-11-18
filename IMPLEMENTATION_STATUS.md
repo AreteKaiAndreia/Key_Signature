@@ -118,10 +118,36 @@ This is the durable resume ledger for the key-signature classifier.
 - The owner explicitly reconfirmed **keep Streamlit Community Cloud**.
   No other host is authorized. A diagnostic of the internal direct guest path
   was unreliable for fresh clients and is not promoted as the public URL.
-- Exact next action: push the font-CSS correction, then run
-  `gh run list --workflow startup-performance.yml --limit 1` and compare the
-  supported embedded view with `reports/startup/hosted-embed-fonts.json`.
-  Keep the public budget failure visible until a complete supported view passes.
+- Published `c0a97f1`. The final [source startup job](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44390025874/job/135104829024)
+  passed at 1,025.2 ms warm median, 1,654.8 ms worst cold process, and 289.1 ms
+  maximum app call. The [public warm job](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44390025874/job/135105938759)
+  correctly failed at 4,020.6 ms. Both retain full samples and before/after logs.
+- Final [public six-engine verification](https://github.com/AreteKaiAndreia/Key_Signature/actions/runs/44390945747)
+  passed on that exact source, including demanded font subsets, phone/desktop
+  inputs, MP3/MP4, live recording, persistence, cumulative audio, automatic final
+  scoring, explanations, diagrams, metrics, and tooltips. Classifier weights
+  and feature algorithms were not changed by this performance work.
+- The supported embedded view with toolbar and padding retained measured
+  3,477.8 ms after the font-CSS correction, versus 3,603.5 ms for the same
+  view with bulk font inlining. Artifact: `reports/startup/hosted-embed-cssfonts.json`.
+  The earlier 3,087.2 ms diagnostic used a different embed option set, so do not
+  attribute that difference solely to fonts. Neither view meets the public limit.
+- Current performance state: **not accepted**. Community Cloud is retained per
+  the owner's explicit choice. Source and functional checks pass; managed-page
+  delivery remains above the public warm budget. Keep the 3,000/30,000/500 ms
+  limits intact. Do not mark this request complete or substitute a simpler UI.
+- Latest successful command: `gh run view 44390945747 --json status,conclusion`.
+- Exact resume command, from this repository:
+
+```bash
+/tmp/keyclf-persistence-qa/bin/python scripts/benchmark_startup.py --url https://musickeyanalyzer.streamlit.app/ --output "reports/startup/resume-$(date +%s).json" --compare /tmp/keyclf-hosted-c0a97f1/hosted.json
+```
+
+Further work must address the supported Cloud page's delivery/redirect path or
+provider-side startup, while preserving the current app and the failing gate.
+No alternative host is authorized. The reports and current checks are described
+in `DEPLOYMENT.md#startup-performance-gate`. The handoff commit is the commit
+containing this record (`git rev-parse HEAD`).
 
 ### Top-three benchmarks and engine selector — 2026-11-16
 

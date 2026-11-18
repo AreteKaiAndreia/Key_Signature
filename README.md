@@ -72,6 +72,11 @@ The neural network learns from overall chroma, harmonic chroma, and bass
 chroma. Its training data consists of 662 CC0/CC BY Freesound loops and 480
 original synthetic phrases. [Open the public app](https://musickeyanalyzer.streamlit.app/).
 
+[Startup performance and CI budgets](DEPLOYMENT.md#startup-performance-gate) measure
+URL navigation through the first painted upload/engine controls and retain
+before/after deltas. The public 3-second warm target remains unmet; the gate
+reports that failure explicitly while the six-engine functional checks pass.
+
 | Held-out set | First exact key | Top three exact keys | First pair | Top three pairs |
 |---|---:|---:|---:|---:|
 | GiantSteps | 47/91 (51.6%) | 67/91 (73.6%) | 48/91 (52.7%) | 74/91 (81.3%) |
